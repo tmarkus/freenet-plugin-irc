@@ -1,0 +1,16 @@
+Release:
+
+- stop publisher when quiting the server == really cleanup after yourself
+- fix issues with rejoining a channel (irssi timeout), re-assign existing publishers? or don't create a new publisher...
+- actually use identity hints
+- sample identity hints from all channels instead of the current associated one
+
+Next versions:
+
+- usermodes for indicating whether we're sure that some other client is monitoring us (and therefore will see our output)
+- publish the fact that we are leaving a channel to freenet (which is different from a timeout)
+- support notices for notifying the client when we've synched to our own publishing feed
+- private encrypted channels
+- do proper logging instead of writing to stdout
+- personal messages?
+
