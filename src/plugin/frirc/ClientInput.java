@@ -33,7 +33,7 @@ class ClientInput extends FrircConnection {
 				server.message(this, str);
 			}
 			System.out.println("Disconnected with.."+socket);
-
+			
 		} catch (IOException e) {
 
 		} finally {
@@ -42,4 +42,11 @@ class ClientInput extends FrircConnection {
 			} catch(IOException e) {}
 		}
 	}
+
+
+	public boolean isLocalClientInput()
+	{
+		return true;
+	}
+
 }

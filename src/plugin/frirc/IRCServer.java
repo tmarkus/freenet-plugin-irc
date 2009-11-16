@@ -77,7 +77,6 @@ public class IRCServer extends Thread implements FredPluginTalker, ClientGetCall
 		if (!channel.contains("#")) channel = "#" + channel;
 		
 		/*
-		
 		for(String channelItem : channelUsers.keySet())
 		{
 			for(String userItem : channelUsers.get(channelItem))
@@ -86,7 +85,6 @@ public class IRCServer extends Thread implements FredPluginTalker, ClientGetCall
 			}
 		}
 		*/
-		
 		
 		if (channelUsers.get(channel) != null)
 		{
@@ -197,12 +195,21 @@ public class IRCServer extends Thread implements FredPluginTalker, ClientGetCall
 	
 	public HashMap<String, String> getIdentityByNick(String nick)
 	{
+		for(HashMap<String,String> identity : identities)
+		{
+			if (identity.get("nick").equals(nick)){
+				return identity;
+			}
+		}
+		
 		for(HashMap<String,String> identity : ownIdentities)
 		{
 			if (identity.get("nick").equals(nick)){
 				return identity;
 			}
 		}
+
+		
 		return null; //FIXME, if the user nickname doesn't match A OwnIdentity send a notice or something through the irc server and then quit the connection
 	}
 	
@@ -213,7 +220,7 @@ public class IRCServer extends Thread implements FredPluginTalker, ClientGetCall
 	 * @param messageObject
 	 */
 	
-	public void message(FrircConnection source, Message messageObject)
+	public synchronized void message(FrircConnection source, Message messageObject)
 	{
 		initOutQueue(source);
 		
@@ -243,6 +250,12 @@ public class IRCServer extends Thread implements FredPluginTalker, ClientGetCall
 			} catch (IOException e) {
 				e.printStackTrace();
 			}
+		}
+		
+		else if (messageObject.getType().equals("MODE"))
+		{
+			String nick = getNickByCon(source);
+			outQueue.get(source).add(new Message(":" + SERVERNAME + " NOTICE " + nick + " :Modes net supported at this time."));
 		}
 		
 		
@@ -412,15 +425,15 @@ public class IRCServer extends Thread implements FredPluginTalker, ClientGetCall
 		{
 			//set an async fetch for the long-term message (every day or something), if it succeeds setup a thread to follow this identity+channel combo
 			FetchContext fc = low_priority_hl.getFetchContext();
-			fc.maxNonSplitfileRetries = 1;
+			fc.maxNonSplitfileRetries = -1;
 			fc.followRedirects = true;
 			fc.ignoreStore = true;
 	
 			FreenetURI fetchURI;
 			try {
 				fetchURI = new FreenetURI("SSK@"+identity.get("ID") + "/" + Frirc.NAMESPACE + "-" + cleanChannel(channel) +  "-" + Frirc.currentIndex() + "-0/feed");
-				low_priority_hl.fetch(fetchURI, 20000, this, this, fc);
-				//System.out.println("Trying to see whether a user is publishing at: " + fetchURI);
+				hl.fetch(fetchURI, 20000, this, this, fc);
+				System.out.println("Trying to see whether a user is publishing at: " + fetchURI);
 			} catch (MalformedURLException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
@@ -496,7 +509,7 @@ public class IRCServer extends Thread implements FredPluginTalker, ClientGetCall
 		talker.send(sfs, null);
 	}
 	
-	private void getAllIdentities(String channel, String nick)
+	private synchronized void getAllIdentities(String channel, String nick)
 	{
 		PluginTalker talker;
 		try {
@@ -532,6 +545,7 @@ public class IRCServer extends Thread implements FredPluginTalker, ClientGetCall
 			try {
 				//create new freenet client output thread
 				FreenetClientOutput output = new FreenetClientOutput(con.getSocket(), this, hl, low_priority_hl, channel, nick);
+				
 				output.setRequestURI(requestURI);
 				output.setInsertURI(insertURI);
 				output.start();
@@ -555,22 +569,38 @@ public class IRCServer extends Thread implements FredPluginTalker, ClientGetCall
 		}
 	}
 
-
 	public synchronized Message getMessageToSend(FrircConnection con)
 	{
-
-		if (outQueue.get(con) != null && outQueue.get(con).size() > 0)
+		
+		if (con.isLocal())
 		{
-			return outQueue.get(con).remove(0);	
+			for(FrircConnection conItem : outQueue.keySet())
+			{
+				if (outQueue.get(conItem).size() > 0) 
+				{
+					if ( conItem.getSocket() != null && conItem.getSocket().equals(con.getSocket()) && conItem.isLocalClientInput() )
+					{
+							return outQueue.get(conItem).remove(0);
+					}
+				}
+			}
 		}
-
-		for(FrircConnection conItem : outQueue.keySet())
+		else
 		{
-			if (conItem.getClass().getName().equals("plugin.frirc.ClientInput")  && conItem.getSocket().equals(con.getSocket()))
+			for(FrircConnection conItem : outQueue.keySet())
 			{
 				if (outQueue.get(conItem).size() > 0)
 				{
-					return outQueue.get(conItem).remove(0);	
+					if (conItem.getSocket() != null && conItem.getSocket().equals(con.getSocket()))
+					{
+						synchronized (outQueue.get(conItem))
+						{
+							if (outQueue.get(conItem).get(0).getChannel().equals(con.getChannel()) && !con.isFreenetClientInput() )
+							{
+									return outQueue.get(conItem).remove(0);
+							}
+						}
+					}
 				}
 			}
 		}
@@ -695,6 +725,10 @@ public class IRCServer extends Thread implements FredPluginTalker, ClientGetCall
 	
 	private void addIdentities(SimpleFieldSet sfs, String channel)
 	{
+
+		//clear current identities (requests refresh
+		identities.clear();
+		
 		//iterate over identities and store them (for resolving nick later on)
 		int i = 0;
 		try {
@@ -717,20 +751,47 @@ public class IRCServer extends Thread implements FredPluginTalker, ClientGetCall
 		}
 	
 		//keep listening to our trusted identities, all the time
+		//setup threads where needed, loop over just discovered created identities
+		for(HashMap<String, String> identity : identities)
+		{
+			setupWoTListener(identity, channel);
+		}
 		
+		doMaintenance(channel);
+	}
+	
+	/**
+	 * Perform various maintenance tasks for the IRC server
+	 * @param channel
+	 */
+	
+	private void doMaintenance(String channel)
+	{
 		while(true)
 		{
 			if (last_channel_spawn.get(channel) == null || last_channel_spawn.get(channel) < (System.currentTimeMillis() - TRY_SPAWN_AGAIN))
 			{
 				System.out.println("Setting up listeners...");
 				last_channel_spawn.put(channel, System.currentTimeMillis()); //timestamp latest attempt to setup listeners
-				
-				//setup threads where needed, loop over just discovered created identities
-				for(HashMap<String, String> identity : identities)
+
+				//get trust tree for which nick? (an instance of OwnIdentity)
+				String nick = "";
+				for(String nickItem : channelUsers.get(channel))
 				{
-					setupWoTListener(identity, channel);
+					for(Map<String, String> identity : ownIdentities)
+					{
+						if (identity.get("nick").equals(nickItem))
+						{
+							nick = nickItem;
+						}
+					}
 				}
+				
+				getAllIdentities(channel, nick);
+				return;
 			}
+			
+			
 			try {
 				Thread.sleep(500);
 			} catch (InterruptedException e) {
@@ -740,9 +801,8 @@ public class IRCServer extends Thread implements FredPluginTalker, ClientGetCall
 			//stop listening if the server is no longer running
 			if (stopThread()) return;
 		}
-		
+
 	}
-	
 	
 	/**
 	 * Process the WoT fcp message containing our identities and add them to the local store
@@ -780,7 +840,7 @@ public class IRCServer extends Thread implements FredPluginTalker, ClientGetCall
 	public void onFailure(FetchException arg0, ClientGetter arg1,
 			ObjectContainer arg2) {
 		
-		//System.out.println("Could not find identity listening on channel key: "  + arg1.getURI());
+		System.out.println("Could not find identity listening on channel key: "  + arg1.getURI());
 		
 	}
 
@@ -805,14 +865,11 @@ public class IRCServer extends Thread implements FredPluginTalker, ClientGetCall
 
 	@Override
 	public boolean persistent() {
-		// TODO Auto-generated method stub
 		return false;
 	}
 
 	@Override
 	public void removeFrom(ObjectContainer arg0) {
-		// TODO Auto-generated method stub
-		
 	}
 
 }

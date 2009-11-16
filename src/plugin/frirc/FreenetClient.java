@@ -14,8 +14,8 @@ public abstract class FreenetClient extends FrircConnection{
 	
 	protected boolean calibrated = false;
 	protected long last_startpoint = 0;
-	protected LinkedList<FreenetURI> oldFailedURIs = new LinkedList<FreenetURI>();
-	protected LinkedList<FreenetURI> oldSuccessURIs = new LinkedList<FreenetURI>();
+	protected LinkedList<String> oldFailedURIs = new LinkedList<String>();
+	protected LinkedList<String> oldSuccessURIs = new LinkedList<String>();
 	protected HighLevelSimpleClient hl;
 	protected HighLevelSimpleClient low_priority_hl;
 	
@@ -34,12 +34,14 @@ public abstract class FreenetClient extends FrircConnection{
 	
 	protected boolean stopThread()
 	{
-		if (!server.isAlive() || (!server.inChannel(nick, channel) && calibrated))
+		if (!server.isAlive() || (!server.inChannel(nick, channel) && calibrated) || (socket != null && socket.isClosed()))
 		{
-			System.out.println("Stopping thread because either server is interrupted or nick no longer in channel, type = " + this.getClass());
+			System.out.println("Stopping thread because either server is interrupted, socket closed, or nick no longer in channel, type = " + this.getClass());
 			System.out.println("details, nick = " + nick + " channel = " + channel);
 			
-			this.interrupt();
+			//let the server know that we're leaving the channel
+			server.leaveChannel(this);
+			
 			return true; //stop the thread?
 		}
 		else
@@ -51,12 +53,11 @@ public abstract class FreenetClient extends FrircConnection{
 	protected boolean isOldSuccessURI(FreenetURI uri)
 	{
 		//keep track of the uris and skip calling the various functions if we've already processed it
-		if (oldSuccessURIs.contains(uri))
+		if (oldSuccessURIs.contains(uri.toString()))
 			{
-				System.out.println("OUDE URI GEVONDEN!!!");
-			return true;
+				return true;
 			}
-		oldSuccessURIs.add(uri);
+		oldSuccessURIs.add(uri.toString());
 		if (oldSuccessURIs.size() > 10) oldSuccessURIs.remove();
 		return false;
 	}
@@ -65,12 +66,11 @@ public abstract class FreenetClient extends FrircConnection{
 	protected boolean isOldFailedURI(FreenetURI uri)
 	{
 		//keep track of the uris and skip calling the various functions if we've already processed it
-		if (oldFailedURIs.contains(uri))
+		if (oldFailedURIs.contains(uri.toString()))
 			{
-				System.out.println("OUDE URI GEVONDEN!!!");
-			return true;
+				return true;
 			}
-		oldFailedURIs.add(uri);
+		oldFailedURIs.add(uri.toString());
 		if (oldFailedURIs.size() > 10) oldFailedURIs.remove();
 		return false;
 	}

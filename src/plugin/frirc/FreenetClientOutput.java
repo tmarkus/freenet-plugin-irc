@@ -117,7 +117,6 @@ public class FreenetClientOutput extends FreenetClient implements ClientPutCallb
 		{
 			//failed? -> good, we've found our latest index to publish to
 			this.calibrated = true;
-
 			System.out.println("Gecalibreerd");
 			pushChannelPing();
 		}
@@ -170,6 +169,7 @@ public class FreenetClientOutput extends FreenetClient implements ClientPutCallb
 		}
 		catch(NullPointerException e)
 		{
+			System.out.println("NullpointerException at nick: " + nick);
 			e.printStackTrace();
 		}
 		
@@ -339,7 +339,7 @@ public class FreenetClientOutput extends FreenetClient implements ClientPutCallb
 			if (stopThread()) return;
 			
 			try {
-				Thread.sleep(1000);
+				Thread.sleep(100);
 			} catch (InterruptedException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();

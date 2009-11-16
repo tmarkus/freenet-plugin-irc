@@ -1,10 +1,5 @@
 package plugin.frirc;
 
-import com.db4o.ObjectSet;
-
-import plugins.WoT.Identity;
-import plugins.WoT.WoT;
-
 public class testConnection {
 
 	/**

@@ -47,21 +47,22 @@ public class FreenetClientInput extends FreenetClient implements ClientGetCallba
 	 */
 
 	@Override
-	public synchronized void onFailure(FetchException arg0, ClientGetter arg1, ObjectContainer arg2) {
+	public void onFailure(FetchException arg0, ClientGetter arg1, ObjectContainer arg2) {
 
-		if (isOldFailedURI(arg1.getURI())) return;
+		//if (isOldFailedURI(arg1.getURI())) return;
 		if (stopThread()) return;
 		
-		if (!calibrated)
+		if (!this.calibrated)
 		{
 			//failed? -> good, we've found our latest index to publish to
+			System.out.println("CALIBRATED FREENET CLIENT LISTENER!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
 			this.calibrated = true;
 			pollForNewMessage(true);
 		}
 	}
 
 	@Override
-	public synchronized void onSuccess(FetchResult fetchResult, ClientGetter arg1, ObjectContainer arg2) {
+	public void onSuccess(FetchResult fetchResult, ClientGetter arg1, ObjectContainer arg2) {
 
 		if (isOldSuccessURI(arg1.getURI())) return;
 		if (stopThread()) return;
@@ -70,7 +71,6 @@ public class FreenetClientInput extends FreenetClient implements ClientGetCallba
 		{
 			//index already exists? increase the count with one and try again
 			latest_edition++;
-			
 			pollForNewMessage(false);
 		}
 		
@@ -159,8 +159,8 @@ public class FreenetClientInput extends FreenetClient implements ClientGetCallba
 	private synchronized void pollForNewMessage(boolean ulpr)
 	{
 		FetchContext fc = low_priority_hl.getFetchContext();
-		fc.maxNonSplitfileRetries = 0;
-		fc.followRedirects = false;
+		fc.maxNonSplitfileRetries = 1;
+		fc.followRedirects = true;
 		fc.ignoreStore = true;
 
 		
@@ -177,10 +177,10 @@ public class FreenetClientInput extends FreenetClient implements ClientGetCallba
 
 		try {
 			FreenetURI fetchURI = new FreenetURI(requestURI.toString() + "-" + last_startpoint + "-" + latest_edition + "/feed");
-			if (isOldFailedURI(fetchURI))
+			if (!isOldFailedURI(fetchURI))
 			{
 				System.out.println("Watching: " + fetchURI);
-				low_priority_hl.fetch(fetchURI, 20000, this, this, fc);
+				hl.fetch(fetchURI, 20000, this, this, fc);
 			}
 		} catch (FetchException e) {
 			// TODO Auto-generated catch block
@@ -231,4 +231,11 @@ public class FreenetClientInput extends FreenetClient implements ClientGetCallba
 		}
 
 	}
+
+	public boolean isFreenetClientInput()
+	{
+		return true;
+	}
+
+
 }

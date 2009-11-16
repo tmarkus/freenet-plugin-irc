@@ -44,6 +44,21 @@ public class Message {
 			if (split.length > 1) this.value = "extra_info_we_will_ignore";
 		}
 
+		else if (split[0].equals("MODE"))
+		{
+			this.type = "MODE";
+			this.channel = split[1];
+			if (split.length > 2) this.value = split[2];
+		}
+		
+		else if (split[1].equals("NOTICE"))
+		{
+			this.type = "NOTICE";
+			
+			//FIXME: set other fields too
+		}
+		
+		
 		else if (split[0].equals("WHO"))
 		{
 			this.type = "WHO";
@@ -136,6 +151,8 @@ public class Message {
 			{
 				this.value += split[i] + " ";
 			}
+		
+			this.value = this.value.substring(1);
 		}
 		
 		

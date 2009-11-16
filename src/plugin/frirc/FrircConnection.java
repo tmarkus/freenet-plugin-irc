@@ -114,4 +114,16 @@ public abstract class FrircConnection extends Thread implements RequestClient {
 		this.channel = channel;
 	}
 	
+	
+	public boolean isLocalClientInput()
+	{
+		return false;
+	}
+
+	public boolean isFreenetClientInput()
+	{
+		return false;
+	}
+
+	
 }

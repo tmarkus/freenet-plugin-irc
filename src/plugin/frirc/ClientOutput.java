@@ -39,7 +39,7 @@ class ClientOutput extends FrircConnection {
 					return; //stop the thread?
 				}
 
-				Thread.sleep(200);
+				Thread.sleep(100);
 			}
 
 		} catch (InterruptedException e) {
