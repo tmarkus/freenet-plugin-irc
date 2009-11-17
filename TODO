@@ -1,11 +1,13 @@
 Release:
 
-- support changing a nick and give feedback for when the nick is not okay (server notice???)
--- add NICK message (we already have that...), the behaviour for a nick changes, we need to modify a lot of arrays, because nicks are primary keys towards users???, joining channels is just forbidden without a proper nick, so check for that
-
-- provide simple instructions when visiting the plugin through http
 - actually use identity hints
+- provide feedback through setting a usermode on whether or not a specific nick is likely to see our messages
 - sample identity hints from all channels instead of the current associated one
+- provide simple instructions when visiting the plugin through http
+
+- better pings:
+	Processing line from digger3: PING test
+	Sending line to digger3: :test PONG test :test
 
 Next versions:
 

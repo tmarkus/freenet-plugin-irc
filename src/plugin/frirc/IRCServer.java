@@ -38,10 +38,13 @@ public class IRCServer extends Thread implements FredPluginTalker, ClientGetCall
 	private final int TRY_SPAWN_AGAIN = 3 * 60 * 1000; //ms 
 	
 	private Map<String, ArrayList<FrircConnection>> nickToInput = new HashMap<String, ArrayList<FrircConnection>>();
+	private Map<String, String> nickToUser = new HashMap<String,String>();
+	
 	private HashMap<FrircConnection, ArrayList<Message>> outQueue = new HashMap<FrircConnection, ArrayList<Message>>();
 	private HashMap<String, HashSet<String>> channelUsers = new HashMap<String, HashSet<String>>(); 
 	private ArrayList<HashMap<String, String>> ownIdentities = new ArrayList<HashMap<String, String>>(); //list of my own identities
 	private ArrayList<HashMap<String, String>> identities = new ArrayList<HashMap<String, String>>(); //list of all identities
+	
 	
 	private HighLevelSimpleClient hl;
 	private HighLevelSimpleClient low_priority_hl;
@@ -108,13 +111,34 @@ public class IRCServer extends Thread implements FredPluginTalker, ClientGetCall
 	{
 		if (nickToInput.containsKey(nick))
 		{
+			//remove existing association?
+			String old_nick = getNickByCon(con);
+			nickToInput.remove(old_nick);
+			
+			try
+			{
+			//associate new nick
 			nickToInput.get(nick).add(con);
+			}
+			catch(Exception e)
+			{
+				System.err.println("Failed to add connection to new nickname");
+			}
+			
+			
+			//associate new nick with username and remove new association
+			nickToUser.put(nick, nickToUser.get(old_nick));
+			nickToUser.remove(old_nick);
 		}
 		else
 		{
 			nickToInput.put(nick, new ArrayList<FrircConnection>());
 			nickToInput.get(nick).add(con);
 		}
+	
+		
+
+		
 	}
 
 	private synchronized void initOutQueue(FrircConnection con)
@@ -227,7 +251,16 @@ public class IRCServer extends Thread implements FredPluginTalker, ClientGetCall
 		
 		//associate nick with connection
 		if (messageObject.getType().equals("NICK") && !messageObject.getNick().equals(""))
-		{
+		{	
+			//confirm the nickchange
+			outQueue.get(source).add(new Message(":" + getNickByCon(source) + "!" + nickToUser.get(getNickByCon(source)) + "@freenet NICK :" + messageObject.getNick()));
+			
+			//tell client if nick is not a known a WoT identity that we know the user has
+			if (!ownIdentities.contains(getIdentityByNick(messageObject.getNick())))
+			{
+				outQueue.get(source).add(new Message(":" + SERVERNAME + " NOTICE " + messageObject.getNick() + " :Could not associate that nick with a WoT identity. Reload the plugin if you just added it or check whether it is actually correct. Joining channels will NOT work!"));
+			}
+			
 			associateNickWithConnection(messageObject.getNick(), source);
 		}
 
@@ -235,6 +268,8 @@ public class IRCServer extends Thread implements FredPluginTalker, ClientGetCall
 		else if (messageObject.getType().equals("USER") && !messageObject.getValue().equals(""))
 		{
 			String nick = getNickByCon(source);
+			nickToUser.put(nick, messageObject.getUser());
+			
 			outQueue.get(source).add(new Message(":" + SERVERNAME + " 001 " + nick + " :Welcome to freenet irc"));
 			outQueue.get(source).add(new Message(":" + SERVERNAME + " 004 " + nick + " " + SERVERNAME + " freenet"));
 			outQueue.get(source).add(new Message(":" + SERVERNAME + " 375 " + nick + " :- Hi!"));
@@ -255,7 +290,7 @@ public class IRCServer extends Thread implements FredPluginTalker, ClientGetCall
 		else if (messageObject.getType().equals("MODE"))
 		{
 			String nick = getNickByCon(source);
-			outQueue.get(source).add(new Message(":" + SERVERNAME + " NOTICE " + nick + " :Modes net supported at this time."));
+			outQueue.get(source).add(new Message(":" + SERVERNAME + " NOTICE " + nick + " :Modes not supported at this time."));
 		}
 		
 		
@@ -393,7 +428,7 @@ public class IRCServer extends Thread implements FredPluginTalker, ClientGetCall
 						outQueue.get(out).add(new Message(":" + nick + "@freenet PRIVMSG " + messageObject.getChannel() + " :" + messageObject.getValue()));
 						
 						break;
-						//TODO: probably some memory leak here...(outQueue never emptied)
+						//TODO: probably some memory leak here...(outQueue never cleaned up)
 					}
 				}
 			}

@@ -47,9 +47,8 @@ public class FreenetClientInput extends FreenetClient implements ClientGetCallba
 	 */
 
 	@Override
-	public void onFailure(FetchException arg0, ClientGetter arg1, ObjectContainer arg2) {
+	public synchronized void onFailure(FetchException arg0, ClientGetter arg1, ObjectContainer arg2) {
 
-		if (isOldFailedURI(arg1.getURI())) return;
 		if (stopThread()) return;
 		
 		if (!this.calibrated)
@@ -62,7 +61,7 @@ public class FreenetClientInput extends FreenetClient implements ClientGetCallba
 	}
 
 	@Override
-	public void onSuccess(FetchResult fetchResult, ClientGetter arg1, ObjectContainer arg2) {
+	public synchronized void onSuccess(FetchResult fetchResult, ClientGetter arg1, ObjectContainer arg2) {
 
 		if (isOldSuccessURI(arg1.getURI())) return;
 		if (stopThread()) return;
