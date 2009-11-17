@@ -49,7 +49,7 @@ public class FreenetClientInput extends FreenetClient implements ClientGetCallba
 	@Override
 	public void onFailure(FetchException arg0, ClientGetter arg1, ObjectContainer arg2) {
 
-		//if (isOldFailedURI(arg1.getURI())) return;
+		if (isOldFailedURI(arg1.getURI())) return;
 		if (stopThread()) return;
 		
 		if (!this.calibrated)

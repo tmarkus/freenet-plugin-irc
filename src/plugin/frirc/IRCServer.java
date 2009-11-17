@@ -408,6 +408,9 @@ public class IRCServer extends Thread implements FredPluginTalker, ClientGetCall
 	
 	public void leaveChannel(FreenetClient connection)
 	{
+		//disassociate nick with connection
+		nickToInput.remove( getNickByCon(connection) );
+		
 		//simulate a leave message from our client
 		message(connection, new Message("PART " + connection.getChannel()));
 	}
@@ -425,7 +428,7 @@ public class IRCServer extends Thread implements FredPluginTalker, ClientGetCall
 		{
 			//set an async fetch for the long-term message (every day or something), if it succeeds setup a thread to follow this identity+channel combo
 			FetchContext fc = low_priority_hl.getFetchContext();
-			fc.maxNonSplitfileRetries = -1;
+			fc.maxNonSplitfileRetries = 2;
 			fc.followRedirects = true;
 			fc.ignoreStore = true;
 	

@@ -3,13 +3,13 @@ Release:
 - support changing a nick and give feedback for when the nick is not okay (server notice???)
 -- add NICK message (we already have that...), the behaviour for a nick changes, we need to modify a lot of arrays, because nicks are primary keys towards users???, joining channels is just forbidden without a proper nick, so check for that
 
-
 - provide simple instructions when visiting the plugin through http
 - actually use identity hints
 - sample identity hints from all channels instead of the current associated one
 
 Next versions:
 
+- cancel ULPR's for older timestamps
 - usermodes for indicating whether we're sure that some other client is monitoring us (and therefore will see our output)
 - publish the fact that we are leaving a channel to freenet (which is different from a timeout)
 - support notices for notifying the client when we've synched to our own publishing feed
