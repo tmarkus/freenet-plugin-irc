@@ -191,13 +191,8 @@ public class IRCServer extends Thread implements FredPluginTalker, ClientGetCall
 
 	public String getNickByID(String id)
 	{
-		//check own identities
-		for(HashMap<String,String> identity : ownIdentities)
-		{
-			if (identity.get("ID").equals(id)){
-				return identity.get("nick");
-			}
-		}
+		//is the requested nick one of our own?
+		if (getOwnNickByID(id) != null) return getOwnNickByID(id);
 		
 		//check all identities
 		for(HashMap<String,String> identity : identities)
@@ -211,6 +206,35 @@ public class IRCServer extends Thread implements FredPluginTalker, ClientGetCall
 		return "UNRESOLVED";
 	}
 
+	public String getOwnNickByID(String id)
+	{
+		//check own identities
+		for(HashMap<String,String> identity : ownIdentities)
+		{
+			if (identity.get("ID").equals(id)){
+				return identity.get("nick");
+			}
+		}
+		return null;
+	}
+	
+	/**
+	 * Set a specific mode for a user in some channel
+	 * @param source The connection from which the modeset originates (used for distributing the outgoinig messages to the correct channel)
+	 * @param nick The nick to which the modeset should be applied
+	 * @param channel The channel in which the nick resides
+	 * @param mode The actual modeset change ('+v' etc)
+	 */
+	
+	public void setUserChannelMode(FrircConnection source, String nick, String channel, String mode)
+	{
+		System.out.println("Setting mode " + mode + " for nick: " + nick);
+		initOutQueue(source);
+		outQueue.get(source).add(new Message(":" + nick + "!" + nick + "@freenet MODE " + channel + " " + mode + " " +nick));
+	}
+	
+	
+	
 	/**
 	 * Retrieve an identity by its nickname
 	 * @param nick
@@ -455,7 +479,7 @@ public class IRCServer extends Thread implements FredPluginTalker, ClientGetCall
 		return channel.replace("#", "");
 	}
 
-	private synchronized void setupWoTListener(HashMap<String, String> identity, String channel)
+	public synchronized void setupWoTListener(HashMap<String, String> identity, String channel)
 	{
 		
 		//check whether identity already has a listening thread

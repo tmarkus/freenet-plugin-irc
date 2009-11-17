@@ -157,15 +157,15 @@ public class FreenetClientOutput extends FreenetClient implements ClientPutCallb
 		
 		try
 		{
-		String requestURI = server.getIdentityByNick(nick).get("ID");
-		
-		//add them to the xml
-		Element identities = xml.createElement("Identities");
-		Element identity = xml.createElement("Identity");
-		identity.setTextContent(requestURI);
-
-		identities.appendChild(identity);
-		message.appendChild(identities);
+			String requestURI = server.getIdentityByNick(nick).get("ID");
+			
+			//add them to the xml
+			Element identities = xml.createElement("Identities");
+			Element identity = xml.createElement("Identity");
+			identity.setTextContent(requestURI);
+	
+			identities.appendChild(identity);
+			message.appendChild(identities);
 		}
 		catch(NullPointerException e)
 		{
@@ -194,6 +194,11 @@ public class FreenetClientOutput extends FreenetClient implements ClientPutCallb
 		messageElement.setTextContent("ping pong!");
 		rootElement.appendChild(messageElement);
 
+		insertNewMessage(getXMLString(xmlDoc));
+	}
+
+	private StringWriter getXMLString(Document xmlDoc)
+	{
 		StringWriter result = new StringWriter();
 
 		DOMSource domSource = new DOMSource(xmlDoc);
@@ -206,10 +211,9 @@ public class FreenetClientOutput extends FreenetClient implements ClientPutCallb
 				e.printStackTrace();
 			}
 		}
-
-		insertNewMessage(result);
+		return result;
 	}
-
+	
 	
 	private synchronized void pushPrivMessage(Message message)
 	{
@@ -229,20 +233,7 @@ public class FreenetClientOutput extends FreenetClient implements ClientPutCallb
 		messageElement.setTextContent(message.getValue());
 		rootElement.appendChild(messageElement);
 
-		StringWriter result = new StringWriter();
-
-		DOMSource domSource = new DOMSource(xmlDoc);
-		StreamResult resultStream = new StreamResult(result);
-		synchronized(mSerializer) {
-			try {
-				mSerializer.transform(domSource, resultStream);
-			} catch (TransformerException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
-		}
-		
-		insertNewMessage(result);
+		insertNewMessage(getXMLString(xmlDoc));
 	}
 	
 	/**

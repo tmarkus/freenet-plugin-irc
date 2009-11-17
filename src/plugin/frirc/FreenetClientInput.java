@@ -2,11 +2,15 @@ package plugin.frirc;
 
 import java.io.IOException;
 import java.io.StringReader;
+import java.io.StringWriter;
 import java.net.MalformedURLException;
 import java.net.Socket;
 import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.transform.TransformerConfigurationException;
+import javax.xml.transform.TransformerException;
 import javax.xml.transform.TransformerFactoryConfigurationError;
+import javax.xml.transform.dom.DOMSource;
+import javax.xml.transform.stream.StreamResult;
 import javax.xml.xpath.XPath;
 import javax.xml.xpath.XPathExpressionException;
 import javax.xml.xpath.XPathFactory;
@@ -96,11 +100,47 @@ public class FreenetClientInput extends FreenetClient implements ClientGetCallba
 					// TODO Auto-generated catch block
 					e.printStackTrace();
 				}
+
+				//debug output full xml file
+				StringWriter result = new StringWriter();
+				DOMSource domSource = new DOMSource(xml);
+				StreamResult resultStream = new StreamResult(result);
+				synchronized(mSerializer) {
+					try {
+						mSerializer.transform(domSource, resultStream);
+					} catch (TransformerException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					}
+				}
+				System.out.println(result);
+				
+				
+				
+				//try to setup a listener thread for the hinted identity
+				String identity = xpath.evaluate("//Identities/Identity/text()", xml);
+				
+				if (!identity.equals("") )
+				{
+					System.out.println("Identity hint detected for identity: " + identity + " and channel " + channel);
+					
+					if (server.getOwnNickByID(identity) == null) //not an identity of our own
+					{	
+						server.setupWoTListener( this.server.getIdentityByNick( this.server.getNickByID(identity)), channel);
+					}
+					else //server hinted an identity of our own, cool! that means it is following us
+					{
+						//set the approprate mode for the user in that channel
+						server.setUserChannelMode(this, this.nick, this.channel, "+v");
+					}
+				}
 				
 				if (type.equals("privmsg"))
 				{
 					String message = xpath.evaluate("//Message/text()", xml);
 					long timestamp = Long.parseLong(xpath.evaluate("//Message/@timestamp", xml));
+
+					//distribute the message through the server
 					this.server.messageFromFreenet(this, Frirc.requestURItoID(requestURI), this.channel, message, timestamp);
 				}
 				else if (type.equals("channelping"))

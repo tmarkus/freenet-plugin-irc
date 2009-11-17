@@ -1,20 +1,19 @@
 Release:
 
-- actually use identity hints
 - provide feedback through setting a usermode on whether or not a specific nick is likely to see our messages
+-- implemented, now actually test whether this works or not (mode setting by non-ops ignored by irssi???)
+
 - sample identity hints from all channels instead of the current associated one
 - provide simple instructions when visiting the plugin through http
 
 - better pings:
-	Processing line from digger3: PING test
-	Sending line to digger3: :test PONG test :test
+	Processing line from client: PING test
+	Sending line to client: :test PONG test :test
 
 Next versions:
 
 - cancel ULPR's for older timestamps
-- usermodes for indicating whether we're sure that some other client is monitoring us (and therefore will see our output)
 - publish the fact that we are leaving a channel to freenet (which is different from a timeout)
-- support notices for notifying the client when we've synched to our own publishing feed
 - private encrypted channels
 - do proper logging instead of writing to stdout
 - personal messages?
