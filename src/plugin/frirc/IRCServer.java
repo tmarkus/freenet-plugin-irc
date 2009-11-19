@@ -230,7 +230,7 @@ public class IRCServer extends Thread implements FredPluginTalker, ClientGetCall
 	{
 		System.out.println("Setting mode " + mode + " for nick: " + nick);
 		initOutQueue(source);
-		outQueue.get(source).add(new Message(":" + nick + "!" + nick + "@freenet MODE " + channel + " " + mode + " " +nick));
+		outQueue.get(source).add(new Message(":" + SERVERNAME + " MODE " + channel + " " + mode + " " +nick));
 	}
 	
 	
@@ -387,7 +387,7 @@ public class IRCServer extends Thread implements FredPluginTalker, ClientGetCall
 			}
 
 			//inform the joining clients about who is 
-			if (source.getClass().toString().equals("class plugin.frirc.ClientInput"))
+			if (source.isLocal())
 			{
 
 				outQueue.get(source).add(new Message(":" + SERVERNAME + " MODE " + channel + " +nt"));
@@ -400,11 +400,8 @@ public class IRCServer extends Thread implements FredPluginTalker, ClientGetCall
 
 				outQueue.get(source).add(new Message(":" + SERVERNAME + " 366 " + nick + " " + channel + " :End of /NAMES list"));
 
-
 				//outQueue.get(con).add(new Message("TOPIC " + messageObject.getValue() + ":We eten hutspot vandaag"));
 			}
-
-
 		}
 		
 		/*
