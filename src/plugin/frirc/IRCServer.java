@@ -331,11 +331,14 @@ public class IRCServer extends Thread implements FredPluginTalker, ClientGetCall
 			//send confirmation to all local clients in the same channel
 			for(String channelUser : channelUsers.get(channel))
 			{
-				for(FrircConnection connection : nickToInput.get(channelUser))
+				if (nickToInput.get(channelUser) != null)
 				{
-					if (connection.isLocal())
+					for(FrircConnection connection : nickToInput.get(channelUser))
 					{
-						outQueue.get(source).add(new Message(":" + nick + "!" + nick + "@freenet PART " + channel));
+						if (connection.isLocal())
+						{
+							outQueue.get(source).add(new Message(":" + nick + "!" + nick + "@freenet PART " + channel));
+						}
 					}
 				}
 			}
@@ -441,17 +444,20 @@ public class IRCServer extends Thread implements FredPluginTalker, ClientGetCall
 
 			for(String channelUser: channelUsers.get(messageObject.getChannel()))
 			{
-				for (FrircConnection out : nickToInput.get(channelUser))
+				if (nickToInput.get(channelUser) != null)
 				{
-					if (	( !source.isLocal() && out.isLocal() && !channelUser.equals(nick)) ||	//deliver locally 
-							( source.isLocal() && !out.isLocal() && channelUser.equals(nick) )		//publish to freenet
-						) 
+					for (FrircConnection out : nickToInput.get(channelUser))
 					{
-						System.out.println("DEBUG: Message added to some outqueue");
-						outQueue.get(out).add(new Message(":" + nick + "@freenet PRIVMSG " + messageObject.getChannel() + " :" + messageObject.getValue()));
-						
-						break;
-						//TODO: probably some memory leak here...(outQueue never cleaned up)
+						if (	( !source.isLocal() && out.isLocal() && !channelUser.equals(nick)) ||	//deliver locally 
+								( source.isLocal() && !out.isLocal() && channelUser.equals(nick) )		//publish to freenet
+							) 
+						{
+							System.out.println("DEBUG: Message added to some outqueue");
+							outQueue.get(out).add(new Message(":" + nick + "@freenet PRIVMSG " + messageObject.getChannel() + " :" + messageObject.getValue()));
+							
+							break;
+							//TODO: probably some memory leak here...(outQueue never cleaned up)
+						}
 					}
 				}
 			}
@@ -466,11 +472,11 @@ public class IRCServer extends Thread implements FredPluginTalker, ClientGetCall
 	
 	public void leaveChannel(FreenetClient connection)
 	{
-		//disassociate nick with connection
-		nickToInput.remove( getNickByCon(connection) );
-		
 		//simulate a leave message from our client
 		message(connection, new Message("PART " + connection.getChannel()));
+
+		//disassociate nick with connection
+		nickToInput.remove( getNickByCon(connection) );
 	}
 	
 	public synchronized void setupWoTListener(HashMap<String, String> identity, String channel)
@@ -644,9 +650,13 @@ public class IRCServer extends Thread implements FredPluginTalker, ClientGetCall
 			{
 				if (outQueue.get(conItem).size() > 0) 
 				{
-					if ( conItem.getSocket() == null || (conItem.getSocket().equals(con.getSocket()) && conItem.isLocalClientInput() ))
+					if ( conItem.getSocket() != null && conItem.getSocket().equals(con.getSocket()) && conItem.isLocalClientInput() )
 					{
 							return outQueue.get(conItem).remove(0);
+					}
+					else if (conItem.getSocket() == null && conItem.isFreenetClientInput())
+					{
+						return outQueue.get(conItem).remove(0);
 					}
 				}
 			}
@@ -671,6 +681,9 @@ public class IRCServer extends Thread implements FredPluginTalker, ClientGetCall
 			}
 		}
 
+		
+		
+		
 		return null;
 	}
 
