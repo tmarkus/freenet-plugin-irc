@@ -1,3 +1,7 @@
+/* This code is part of a plugin for Freenet. It is distributed 
+ * under the GNU General Public License, version 3 (or at your option
+ * any later version). See http://www.gnu.org/ for details of the GPL. */
+
 package plugin.frirc;
 
 import java.io.IOException;
@@ -89,8 +93,6 @@ public class FreenetClientInput extends FreenetClient implements ClientGetCallba
 			try {
 				xml = parseXML(new String(fetchResult.asByteArray()));
 				
-				System.out.println(fetchResult.asByteArray());
-				
 				//determine type of message
 				XPath xpath = XPathFactory.newInstance().newXPath();
 				String type = "UNKNOWN";
@@ -126,7 +128,8 @@ public class FreenetClientInput extends FreenetClient implements ClientGetCallba
 					
 					if (server.getOwnNickByID(identity) == null) //not an identity of our own
 					{	
-						server.setupWoTListener( this.server.getIdentityByNick( this.server.getNickByID(identity)), channel);
+						server.createChannelIdentityThread(Frirc.idToRequestURI(identity, channel));
+						//server.setupWoTListener( this.server.getIdentityByNick( this.server.getNickByID(identity)), channel);
 					}
 					else //server hinted an identity of our own, cool! that means it is following us
 					{

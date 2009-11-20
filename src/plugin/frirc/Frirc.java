@@ -1,4 +1,11 @@
+/* This code is part of a plugin for Freenet. It is distributed 
+ * under the GNU General Public License, version 3 (or at your option
+ * any later version). See http://www.gnu.org/ for details of the GPL. */
+
+
 package plugin.frirc;
+
+import java.net.MalformedURLException;
 
 import javax.xml.transform.TransformerFactoryConfigurationError;
 
@@ -110,5 +117,22 @@ public class Frirc implements FredPlugin, FredPluginHTTP, FredPluginThreadless, 
 	{
 		return "#" + requestURI.toString().split("/")[1].split("-")[1];
 	}
+	
+	public static FreenetURI idToRequestURI(String id, String channel)
+	{
+		try {
+			FreenetURI request =  new FreenetURI("SSK@" + id + "/" + Frirc.NAMESPACE + "-" + cleanChannel(channel));
+			return request;
+		} catch (MalformedURLException e) {
+			e.printStackTrace();
+		}
+		return null;
+	}
+	
+	public static String cleanChannel(String channel)
+	{
+		return channel.replace("#", "");
+	}
+
 	
 }

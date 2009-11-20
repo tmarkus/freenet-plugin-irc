@@ -1,5 +1,9 @@
 package plugin.frirc;
 
+/* This code is part of a plugin for Freenet. It is distributed 
+ * under the GNU General Public License, version 3 (or at your option
+ * any later version). See http://www.gnu.org/ for details of the GPL. */
+
 import java.net.Socket;
 import java.util.LinkedList;
 

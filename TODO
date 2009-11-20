@@ -1,20 +1,41 @@
 Release:
 
-- provide feedback through setting a usermode on whether or not a specific nick is likely to see our messages
--- implemented, now actually test whether this works or not (mode setting by non-ops ignored by irssi???)
-
-- sample identity hints from all channels instead of the current associated one
 - provide simple instructions when visiting the plugin through http
+- check trust of a hinted identity (calculated trust, not manually assigned)
+- properly use rank for first identity listeners
 
-- better pings:
-	Processing line from client: PING test
-	Sending line to client: :test PONG test :test
+fix:
+INFO   | jvm 2    | 2009/11/20 09:30:46 | UNABLE TO PARSE MESSAGE, storing as raw: :ERROR COULD NOT ASSOCIATE CONNECTION WITH NICKNAME@freenet PRIVMSG #test :::::and now we wait for a channelping from frittertest and hopefully we'll see that it actually receives messages 
+INFO   | jvm 2    | 2009/11/20 09:30:46 | java.lang.NullPointerException
+INFO   | jvm 2    | 2009/11/20 09:30:46 | 	at plugin.frirc.IRCServer.message(IRCServer.java:444)
+INFO   | jvm 2    | 2009/11/20 09:30:46 | 	at plugin.frirc.IRCServer.messageFromFreenet(IRCServer.java:185)
+INFO   | jvm 2    | 2009/11/20 09:30:46 | 	at plugin.frirc.FreenetClientInput.onSuccess(FreenetClientInput.java:147)
+INFO   | jvm 2    | 2009/11/20 09:30:46 | 	at freenet.client.async.ClientGetter.onSuccess(ClientGetter.java:233)
+INFO   | jvm 2    | 2009/11/20 09:30:46 | 	at freenet.client.async.SingleFileFetcher.onSuccess(SingleFileFetcher.java:334)
+INFO   | jvm 2    | 2009/11/20 09:30:46 | 	at freenet.client.async.SingleFileFetcher.onSuccess(SingleFileFetcher.java:214)
+INFO   | jvm 2    | 2009/11/20 09:30:46 | 	at freenet.client.async.BaseSingleFileFetcher.onGotKey(BaseSingleFileFetcher.java:220)
+INFO   | jvm 2    | 2009/11/20 09:30:46 | 	at freenet.client.async.SingleKeyListener.handleBlock(SingleKeyListener.java:55)
+INFO   | jvm 2    | 2009/11/20 09:30:46 | 	at freenet.client.async.ClientRequestSchedulerBase.tripPendingKey(ClientRequestSchedulerBase.java:349)
+INFO   | jvm 2    | 2009/11/20 09:30:46 | 	at freenet.client.async.ClientRequestScheduler.tripPendingKey(ClientRequestScheduler.java:910)
+INFO   | jvm 2    | 2009/11/20 09:30:46 | 	at freenet.node.Node.store(Node.java:4233)
+INFO   | jvm 2    | 2009/11/20 09:30:46 | 	at freenet.node.Node.storeShallow(Node.java:4186)
+INFO   | jvm 2    | 2009/11/20 09:30:46 | 	at freenet.node.RequestSender.verifyAndCommit(RequestSender.java:1003)
+INFO   | jvm 2    | 2009/11/20 09:30:46 | 	at freenet.node.RequestSender.realRun(RequestSender.java:299)
+INFO   | jvm 2    | 2009/11/20 09:30:46 | 	at freenet.node.RequestSender.run(RequestSender.java:193)
+INFO   | jvm 2    | 2009/11/20 09:30:46 | 	at freenet.support.PooledExecutor$MyThread.realRun(PooledExecutor.java:227)
+INFO   | jvm 2    | 2009/11/20 09:30:46 | 	at freenet.support.io.NativeThread.run(NativeThread.java:101)
+INFO   | jvm 2    | 2009/11/20 09:30:46 | SENT: :freenetIRCserver MODE #test +v frittertest
+INFO   | jvm 2    | 2009/11/20 09:30:46 | SENT: :ERROR COULD NOT ASSOCIATE CONNECTION WITH NICKNAME@freenet PRIVMSG #test :::::and now we wait for a channelping from frittertest and hopefully we'll see that it actually receives messages 
+
+
 
 Next versions:
 
-- cancel ULPR's for older timestamps
-- publish the fact that we are leaving a channel to freenet (which is different from a timeout)
-- private encrypted channels
 - do proper logging instead of writing to stdout
+- publish the fact that we are leaving a channel to freenet (which is different from a timeout)
+- discover other channels (support /list)
+- sample identity hints from all channels instead of the current associated one
+- cancel ULPR's for older timestamps
+- private encrypted channels
 - personal messages?
-
+- support topics

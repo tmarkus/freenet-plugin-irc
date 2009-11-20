@@ -1,4 +1,10 @@
+/* This code is part of a plugin for Freenet. It is distributed 
+ * under the GNU General Public License, version 3 (or at your option
+ * any later version). See http://www.gnu.org/ for details of the GPL. */
+
+
 package plugin.frirc;
+
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.MalformedURLException;
@@ -135,10 +141,6 @@ public class IRCServer extends Thread implements FredPluginTalker, ClientGetCall
 			nickToInput.put(nick, new ArrayList<FrircConnection>());
 			nickToInput.get(nick).add(con);
 		}
-	
-		
-
-		
 	}
 
 	private synchronized void initOutQueue(FrircConnection con)
@@ -471,11 +473,6 @@ public class IRCServer extends Thread implements FredPluginTalker, ClientGetCall
 		message(connection, new Message("PART " + connection.getChannel()));
 	}
 	
-	private static String cleanChannel(String channel)
-	{
-		return channel.replace("#", "");
-	}
-
 	public synchronized void setupWoTListener(HashMap<String, String> identity, String channel)
 	{
 		
@@ -484,13 +481,13 @@ public class IRCServer extends Thread implements FredPluginTalker, ClientGetCall
 		{
 			//set an async fetch for the long-term message (every day or something), if it succeeds setup a thread to follow this identity+channel combo
 			FetchContext fc = low_priority_hl.getFetchContext();
-			fc.maxNonSplitfileRetries = 2;
+			fc.maxNonSplitfileRetries = 1;
 			fc.followRedirects = true;
 			fc.ignoreStore = true;
 	
 			FreenetURI fetchURI;
 			try {
-				fetchURI = new FreenetURI("SSK@"+identity.get("ID") + "/" + Frirc.NAMESPACE + "-" + cleanChannel(channel) +  "-" + Frirc.currentIndex() + "-0/feed");
+				fetchURI = new FreenetURI("SSK@"+identity.get("ID") + "/" + Frirc.NAMESPACE + "-" + Frirc.cleanChannel(channel) +  "-" + Frirc.currentIndex() + "-0/feed");
 				hl.fetch(fetchURI, 20000, this, this, fc);
 				System.out.println("Trying to see whether a user is publishing at: " + fetchURI);
 			} catch (MalformedURLException e) {
@@ -508,7 +505,7 @@ public class IRCServer extends Thread implements FredPluginTalker, ClientGetCall
 	 * @param requestURI
 	 */
 		
-	private void createChannelIdentityThread(FreenetURI requestURI)	
+	public synchronized void createChannelIdentityThread(FreenetURI requestURI)	
 	{
 		//extract channel from URI
 		String channel = Frirc.requestURItoChannel(requestURI); 
@@ -517,16 +514,26 @@ public class IRCServer extends Thread implements FredPluginTalker, ClientGetCall
 		String id = Frirc.requestURItoID(requestURI);
 		String nick = getNickByID(id);
 
+		if (nick == "UNRESOLVED")
+		{
+			Logger.error(this, "Could not resolve the identity " + id + " to a nick through my known WoT. Not creating FreenetClientInput thread.");
+			return;
+		}
+		
 		//don't create a listening thread for our own messages
 		for(Map<String, String> identity : ownIdentities)
 		{
 			if (identity.get("ID").equals(id)) return;
 		}
 		
+		//don't setup another thread if the nick is already in the channel
+		if (channelUsers.get(channel).contains(nick)) return;
+		
+		
 		System.out.println("Found an identity posting channel content! wow! setting up a dedicated thread to follow him/her/it!"); 
 		
 		try {
-			FreenetURI newRequestURI = new FreenetURI("SSK@" + id + "/" + Frirc.NAMESPACE + "-" + cleanChannel(channel));
+			FreenetURI newRequestURI = new FreenetURI("SSK@" + id + "/" + Frirc.NAMESPACE + "-" + Frirc.cleanChannel(channel));
 
 			//query each identity we know about for the channel (maxretries = 1)
 			//and create a handler to deal with the identity
@@ -594,8 +601,8 @@ public class IRCServer extends Thread implements FredPluginTalker, ClientGetCall
 	private void setupFreenetPublisher(String nick, String channel, FrircConnection con)
 	{
 		HashMap<String, String> identity = getIdentityByNick(nick);
-		String insert = "SSK@" + identity.get("insertID") + "/" + Frirc.NAMESPACE + "-" + cleanChannel(channel);
-		String request = "SSK@" + identity.get("ID") + "/" + Frirc.NAMESPACE + "-" + cleanChannel(channel);
+		String insert = "SSK@" + identity.get("insertID") + "/" + Frirc.NAMESPACE + "-" + Frirc.cleanChannel(channel);
+		String request = "SSK@" + identity.get("ID") + "/" + Frirc.NAMESPACE + "-" + Frirc.cleanChannel(channel);
 
 		try {
 			FreenetURI insertURI = new FreenetURI(insert);
@@ -637,7 +644,7 @@ public class IRCServer extends Thread implements FredPluginTalker, ClientGetCall
 			{
 				if (outQueue.get(conItem).size() > 0) 
 				{
-					if ( conItem.getSocket() != null && conItem.getSocket().equals(con.getSocket()) && conItem.isLocalClientInput() )
+					if ( conItem.getSocket() == null || (conItem.getSocket().equals(con.getSocket()) && conItem.isLocalClientInput() ))
 					{
 							return outQueue.get(conItem).remove(0);
 					}
@@ -796,12 +803,9 @@ public class IRCServer extends Thread implements FredPluginTalker, ClientGetCall
 				HashMap<String, String> identity = new HashMap<String,String>();
 				identity.put("ID", sfs.getString("RequestURI"+i).split("/")[0].replace("USK@", ""));
 				identity.put("nick", sfs.getString("Nickname"+i));
+				identity.put("Value", sfs.getString("Value"+i));
 				
-				if (Integer.parseInt(sfs.getString("Value"+i)) >= 0)
-				{
-					identities.add(identity);
-				}
-				
+				identities.add(identity);
 				i++;
 			}
 		} catch (FSParseException e) { //triggered when we've reached the end of the identity list
@@ -813,7 +817,10 @@ public class IRCServer extends Thread implements FredPluginTalker, ClientGetCall
 		//setup threads where needed, loop over just discovered created identities
 		for(HashMap<String, String> identity : identities)
 		{
-			setupWoTListener(identity, channel);
+			if (Integer.parseInt(identity.get("Value")) >= 0)
+			{
+				setupWoTListener(identity, channel);
+			}
 		}
 		
 		doMaintenance(channel);
