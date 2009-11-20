@@ -1,6 +1,6 @@
 Release:
 
-- output seems to be mirrored back to the client from a received listener, not good
+- fix ':'-prefix in message
 - publish the fact that we are leaving a channel to freenet (which is different from a timeout)
 - provide simple instructions when visiting the plugin through http
 - check trust of a hinted identity (calculated trust, not manually assigned)

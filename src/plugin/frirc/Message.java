@@ -145,6 +145,7 @@ public class Message {
 			{
 				this.value += split[i] + " ";
 			}
+			this.value = this.value.substring(1);
 		}
 		else if (split.length > 2 && split[0].equals("PRIVMSG"))
 		{
