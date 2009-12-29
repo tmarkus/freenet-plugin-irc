@@ -3,6 +3,9 @@
  * any later version). See http://www.gnu.org/ for details of the GPL. */
 
 package plugin.frirc;
+
+import java.util.HashMap;
+
 /**
  * This should be a proper parser someday, please contribute ;)
  * @author tmarkus
@@ -256,6 +259,23 @@ public class Message {
 	public String getUser()
 	{
 		return this.username;
+	}
+
+
+	/**
+	 * Create a new IRC join message object
+	 * @param identity
+	 * @param channel
+	 * @return
+	 */
+	public static Message createJOINMessage(HashMap<String,String> identity, String channel)
+	{
+		return new Message(":" + identity.get("nick")+"!"+identity.get("nick") + "@freenet" + " JOIN " + channel);
+	}
+	
+	public static Message createChannelMessage(HashMap<String, String> identity, String channel, Message message)
+	{
+		return new Message(":" + identity.get("nick") + "@freenet PRIVMSG " + channel + " :" + message.getValue());
 	}
 	
 }

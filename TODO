@@ -4,6 +4,11 @@ Release:
 - create a seperate managing thread for a 'channel'
 
 -- implement setup phase (opening a local connection and sending a nick + name)
+
+-- I need to associate a connection with an identity through a nick at connection setup
+-- 
+
+
 -- implement joins (only single user to a channel)
 -- setup channelthreadlisteners (usks)
 -- send received freenetclientinput to local clients

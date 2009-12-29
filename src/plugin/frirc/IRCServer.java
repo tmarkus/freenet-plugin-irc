@@ -7,8 +7,6 @@ package plugin.frirc;
 
 /**
  * IRC server manages:
- * - ownidentities
- * - identities
  * - channelmanagers
  * - private conversations
  */
@@ -47,13 +45,25 @@ import freenet.support.Logger;
 import freenet.support.SimpleFieldSet;
 import freenet.support.api.Bucket;
 
-public class IRCServer extends Thread implements FredPluginTalker, ClientGetCallback, RequestClient{  
-	static int PORT=6667; // assign to next available Port.
+public class IRCServer extends Thread {  
+	static final int PORT=6667; // assign to next available Port.
 	static final String SERVERNAME = "freenetIRCserver";
 	private PluginRespirator pr;
 	private ServerSocket serverSocket;
+	private IdentityManager identityManager;
+	
+	//local outgoing connections
+	private HashMap<HashMap<String, String>, ClientOutput> locals = new HashMap<HashMap<String, String>, ClientOutput>();
+	
+	
+	public IRCServer(PluginRespirator pr)
+	{
+		this.pr = pr;
+		this.identityManager = new IdentityManager(pr);
+	}
 
-
+	
+	
 	/**
 	 * Send a message to a locally connected irc client
 	 */
@@ -90,7 +100,6 @@ public class IRCServer extends Thread implements FredPluginTalker, ClientGetCall
 	public void setUserChannelMode(FrircConnection source, String nick, String channel, String mode)
 	{
 		System.out.println("Setting mode " + mode + " for nick: " + nick);
-		initOutQueue(source);
 		outQueue.get(source).add(new Message(":" + SERVERNAME + " MODE " + channel + " " + mode + " " +nick));
 	}
 	
@@ -102,9 +111,6 @@ public class IRCServer extends Thread implements FredPluginTalker, ClientGetCall
 	
 	public synchronized void message(FrircConnection source, Message messageObject)
 	{
-		initOutQueue(source);
-		
-		
 		//associate nick with connection
 		if (messageObject.getType().equals("NICK") && !messageObject.getNick().equals(""))
 		{	
@@ -299,28 +305,8 @@ public class IRCServer extends Thread implements FredPluginTalker, ClientGetCall
 		}
 	}
 
-
-	
-
-
-
-	
-	
-	
-	
-	public IRCServer(HighLevelSimpleClient hl, HighLevelSimpleClient low_priority_hl, PluginRespirator pr)
-	{
-		this.hl = hl;
-		this.low_priority_hl = low_priority_hl;
-		this.pr = pr;
-		
-	}
-
 	public void run()
 	{
-		//try to obtain own identities from WoT
-		getOwnIdentities();
-		
 		try {
 			serverSocket = new ServerSocket(PORT);
 
@@ -334,18 +320,13 @@ public class IRCServer extends Thread implements FredPluginTalker, ClientGetCall
 				// Blocks until a connection occurs:
 				Socket socket = serverSocket.accept();
 				try {
-					new ClientInput(socket, this);  // Handle an incoming Client.
+					new LocalClient(socket, this);  // Handle an incoming Client.
 					new ClientOutput(socket, this);  // Handle an incoming Client.
 				} catch(IOException e) {
 					// If it fails, close the socket,
 					// otherwise the thread will close it:
 					socket.close();
 					serverSocket.close();
-					channelUsers.clear();
-					identities.clear();
-					nickToInput.clear();
-					ownIdentities.clear();
-					outQueue.clear();
 					
 					return;
 				} catch (TransformerConfigurationException e) {

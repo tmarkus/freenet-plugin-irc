@@ -44,16 +44,13 @@ public class Frirc implements FredPlugin, FredPluginHTTP, FredPluginThreadless, 
 	public void runPlugin(PluginRespirator pr) {
 		// TODO Auto-generated method stub
 		
-		//schedule all the requests from this application with a high priority class so they should finish sooner
-		HighLevelSimpleClient hl = pr.getNode().clientCore.makeClient(RequestStarter.MAXIMUM_PRIORITY_CLASS);
-		HighLevelSimpleClient low_priority_hl = pr.getNode().clientCore.makeClient(RequestStarter.PREFETCH_PRIORITY_CLASS);
 		
 		try {
 			
 			System.out.println("Now starting the IRC server...");
 			
 			 
-			this.IRCServer = new IRCServer(hl, low_priority_hl, pr);
+			this.IRCServer = new IRCServer(pr);
 			this.IRCServer.start();
 			
 		} catch (TransformerFactoryConfigurationError e) {

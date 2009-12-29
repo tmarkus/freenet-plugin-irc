@@ -13,6 +13,8 @@ import freenet.client.HighLevelSimpleClient;
 import freenet.client.async.ClientGetCallback;
 import freenet.client.async.ClientGetter;
 import freenet.keys.FreenetURI;
+import freenet.node.RequestStarter;
+import freenet.pluginmanager.PluginRespirator;
 
 public class ChannelManager extends Thread implements ClientGetCallback{
 
@@ -32,11 +34,9 @@ public class ChannelManager extends Thread implements ClientGetCallback{
 	private final int TRY_SPAWN_AGAIN = 3 * 60 * 1000; //ms, try to setup WoT listeners again
 	
 	
-	public ChannelManager(String channel, IRCServer server, HighLevelSimpleClient hl, HighLevelSimpleClient low_priority_hl)
+	public ChannelManager(String channel, IRCServer server, PluginRespirator pr)
 	{
 		this.channel = channel;
-		this.hl = hl;
-		this.low_priority_hl = low_priority_hl;
 		this.server = server;
 		
 		FetchContext fc = hl.getFetchContext();
@@ -50,6 +50,11 @@ public class ChannelManager extends Thread implements ClientGetCallback{
 		fc2.followRedirects = true;
 		fc2.ignoreStore = true;
 		this.ULPRFC = fc2;
+	
+		//schedule all the requests from this application with a high priority class so they should finish sooner
+		hl = pr.getNode().clientCore.makeClient(RequestStarter.MAXIMUM_PRIORITY_CLASS);
+		low_priority_hl = pr.getNode().clientCore.makeClient(RequestStarter.PREFETCH_PRIORITY_CLASS);
+	
 	}
 	
 	private synchronized void setupWoTListener(Map<String, String> identity)
@@ -72,17 +77,17 @@ public class ChannelManager extends Thread implements ClientGetCallback{
 	{
 			if (message.getType().equals("PRIVMSG"))
 			{
-				if (!server.getOwnIdentities().contains(identity)) //message coming from some freenet client?
+				if (getOwnIdentities().contains(identity)) //message coming from some freenet client?
 				{
 					//check if the nickname is in the channel already
-					if (!channelIdentities.contains(identity))
+					if (!channelIdentities.contains(identity)) // not? send JOIN message
 					{
 						channelIdentities.add(identity);
-						server.sendLocalMessage(new Message(":" + identity.get("nick")+"!"+identity.get("nick") + "@freenet" + " JOIN " + channel));	// not -> simulate join message
+						server.sendLocalMessage(Message.createJOINMessage(identity, channel));
 					}
 		
 					// emulate message coming from the nick
-					server.sendLocalMessage(new Message(":" + identity.get("nick") + "@freenet PRIVMSG " + channel + " :" + message.getValue()));
+					server.sendLocalMessage(Message.createChannelMessage(identity, channel, message));
 				}
 				else //message coming from our own local client
 				{
@@ -102,6 +107,17 @@ public class ChannelManager extends Thread implements ClientGetCallback{
 		return channelIdentities;
 	}
 	
+	/**
+	 * Return the set of own identities which are in this channel
+	 * @return
+	 */
+	
+	public HashSet<HashMap<String, String>> getOwnIdentities()
+	{
+		return channelIdentities;
+	}
+	
+	
 	public String getChannel()
 	{
 		return this.channel;
@@ -116,7 +132,7 @@ public class ChannelManager extends Thread implements ClientGetCallback{
 			try {
 
 				//setup listeners for all the people in my WoT
-				for(Map<String, String> identity : server.getAllIdentities())
+				for(Map<String, String> identity : getIdentities())
 				{
 					if (!isCalibrated.get(identity.get("ID")))
 					{
