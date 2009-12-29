@@ -23,7 +23,7 @@ public class ChannelManager extends Thread implements ClientGetCallback{
 	private HighLevelSimpleClient low_priority_hl;
 	private IRCServer server;
 	
-	private HashSet<ClientGetter> requests = new HashSet<ClientGetter>();  			//manage all outstanding connections
+	private HashSet<ClientGetter> pendingRequests = new HashSet<ClientGetter>();  			//manage all outstanding connections
 	private Map<String, Boolean> isCalibrated = new HashMap<String, Boolean>();		//store whether an identity is calibrated yet or not
 	private HashSet<HashMap<String,String>> channelIdentities = 
 					new HashSet<HashMap<String,String>>(); 							// which identities are in which channel?
@@ -62,7 +62,7 @@ public class ChannelManager extends Thread implements ClientGetCallback{
 			FreenetURI fetchURI;
 			try {
 				fetchURI = Frirc.idToRequestURI(identity.get("ID"), channel);
-				requests.add(hl.fetch(fetchURI, 20000, null, this, singleFC));
+				pendingRequests.add(hl.fetch(fetchURI, 20000, null, this, singleFC));
 				System.out.println("Trying to see whether a user is publishing at: " + fetchURI);
 			} catch (FetchException e) {
 				e.printStackTrace();
@@ -83,11 +83,11 @@ public class ChannelManager extends Thread implements ClientGetCallback{
 					if (!channelIdentities.contains(identity)) // not? send JOIN message
 					{
 						channelIdentities.add(identity);
-						server.sendLocalMessage(Message.createJOINMessage(identity, channel));
+						server.sendLocalMessage(Message.createJOINMessage(identity, channel), identity);
 					}
 		
 					// emulate message coming from the nick
-					server.sendLocalMessage(Message.createChannelMessage(identity, channel, message));
+					server.sendLocalMessage(Message.createChannelMessage(identity, channel, message), identity);
 				}
 				else //message coming from our own local client
 				{
@@ -159,7 +159,7 @@ public class ChannelManager extends Thread implements ClientGetCallback{
 			{
 				isCalibrated.put(id, true);
 				try {
-					requests.add(hl.fetch(cg.getURI(), 20000, null, this, ULPRFC));
+					pendingRequests.add(hl.fetch(cg.getURI(), 20000, null, this, ULPRFC));
 				} catch (FetchException e) {
 					e.printStackTrace();
 				}
@@ -181,7 +181,7 @@ public class ChannelManager extends Thread implements ClientGetCallback{
 		{
 			isCalibrated.put(id, false);
 			try {
-				requests.add(hl.fetch(Frirc.getNextIndexURI(cg.getURI()),20000, null, this, singleFC));
+				pendingRequests.add(hl.fetch(Frirc.getNextIndexURI(cg.getURI()),20000, null, this, singleFC));
 			} catch (FetchException e) {
 				e.printStackTrace();
 			}

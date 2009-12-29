@@ -4,7 +4,12 @@
 
 package plugin.frirc;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import freenet.pluginmanager.PluginRespirator;
 
 /**
  * This should be a proper parser someday, please contribute ;)
@@ -261,6 +266,24 @@ public class Message {
 		return this.username;
 	}
 
+	/**
+	 * Return the identity that belongs to this identity
+	 * @param pr
+	 * @return a single identity that matches the nickname of the message
+	 */
+	
+	public HashMap<String, String> getIdentity(PluginRespirator pr, Map<String, String> ownIdentity)
+	{
+		IdentityManager manager = new IdentityManager(pr, ownIdentity);
+		for(HashMap<String, String> identity : manager.getAllIdentities())
+		{
+			if (identity.get("nick").equals(this.nick)) return identity;
+		}
+		return null;
+	}
+	
+	
+	
 
 	/**
 	 * Create a new IRC join message object
@@ -278,4 +301,31 @@ public class Message {
 		return new Message(":" + identity.get("nick") + "@freenet PRIVMSG " + channel + " :" + message.getValue());
 	}
 	
+	public static Message createNickChangeMessage(Map<String, String> old_identity, Map<String, String> new_identity)
+	{
+		return new Message(":" + old_identity.get("nick") + "!" + old_identity.get("nick") + "@freenet NICK :" + new_identity.get("nick"));	
+	}
+	
+	public static Message createServerNoticeMessage(String nick, String notice)
+	{
+		return new Message(":" + IRCServer.SERVERNAME + " NOTICE " + nick + " :" + notice);
+	}
+
+	public static List<Message> createGenericServerLoginMessages(Map<String, String> identity)
+	{
+		List<Message> messages = new ArrayList<Message>();
+
+		messages.add(createGenericServerLoginMessage(identity, "001", ":Welcome to freenet irc"));
+		messages.add(createGenericServerLoginMessage(identity, "004",  IRCServer.SERVERNAME + " freenet"));
+		messages.add(createGenericServerLoginMessage(identity, "375", ":- Hi!"));
+		messages.add(createGenericServerLoginMessage(identity, "372", ":- Welcome!"));
+		messages.add(createGenericServerLoginMessage(identity, "376", ":End of /MOTD command"));
+		
+		return messages;
+	}
+
+	private static Message createGenericServerLoginMessage(Map<String, String> identity, String code, String message)
+	{
+		return new Message(":" + IRCServer.SERVERNAME + " "+code+" " + identity.get("nick") + " " + message);
+	}
 }

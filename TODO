@@ -3,20 +3,16 @@ Release:
 
 - create a seperate managing thread for a 'channel'
 
--- implement setup phase (opening a local connection and sending a nick + name)
-
--- I need to associate a connection with an identity through a nick at connection setup
--- 
-
-
 -- implement joins (only single user to a channel)
--- setup channelthreadlisteners (usks)
+-- calibrate our own connection
+-- push a channelping if calibrated
+-- setup channelthreadlisteners (usks) for all trusted identities?
+-- calibrate a connection
+-- update the identities in the channel accordingly when calibrated
+-- process privmsgs
 -- send received freenetclientinput to local clients
-
-
-
 -- expire old connections
--- 
+-- support leaving a channel timeout / explicitly
 
 
 - redo distribution of messages to local and remote connections

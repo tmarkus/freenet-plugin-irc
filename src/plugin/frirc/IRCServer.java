@@ -21,6 +21,7 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.ArrayList;
 import java.util.Set;
+import java.util.Map.Entry;
 
 import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.transform.TransformerConfigurationException;
@@ -46,49 +47,22 @@ import freenet.support.SimpleFieldSet;
 import freenet.support.api.Bucket;
 
 public class IRCServer extends Thread {  
-	static final int PORT=6667; // assign to next available Port.
+	static final int PORT = 6667; // assign to next available Port.
 	static final String SERVERNAME = "freenetIRCserver";
 	private PluginRespirator pr;
 	private ServerSocket serverSocket;
 	private IdentityManager identityManager;
 	
 	//local outgoing connections
-	private HashMap<HashMap<String, String>, ClientOutput> locals = new HashMap<HashMap<String, String>, ClientOutput>();
+	private HashMap<HashMap<String, String>, LocalClient> locals = new HashMap<HashMap<String, String>, LocalClient>();
 	
 	
 	public IRCServer(PluginRespirator pr)
 	{
 		this.pr = pr;
-		this.identityManager = new IdentityManager(pr);
+		this.identityManager = new IdentityManager(pr, null);
 	}
 
-	
-	
-	/**
-	 * Send a message to a locally connected irc client
-	 */
-	
-	public void sendLocalMessage(Message message)
-	{
-		
-	}
-	
-	/**
-	 * Receive a message from a local client
-	 * @param con
-	 * @param message
-	 */
-
-	public void message(FrircConnection con, String message)
-	{
-		Message messageObject = new Message(message);
-		message(con, messageObject);
-		
-		//message channel specific? hand it over to the correct Channelmanager
-		
-		//channel something generic? process it in the ircserver
-	}
-	
 	/**
 	 * Set a specific mode for a user in some channel
 	 * @param source The connection from which the modeset originates (used for distributing the outgoinig messages to the correct channel)
@@ -96,74 +70,124 @@ public class IRCServer extends Thread {
 	 * @param channel The channel in which the nick resides
 	 * @param mode The actual modeset change ('+v' etc)
 	 */
-	
+	/*
 	public void setUserChannelMode(FrircConnection source, String nick, String channel, String mode)
 	{
 		System.out.println("Setting mode " + mode + " for nick: " + nick);
 		outQueue.get(source).add(new Message(":" + SERVERNAME + " MODE " + channel + " " + mode + " " +nick));
 	}
 	
+	*/
+	
+
+	/**
+	 * Send a message to locally clients
+	 */
+	
+	public void sendLocalMessage(Message message, Map<String, String> identity)
+	{
+		locals.get(identity).sendMessage(message);
+	}
+
+	/**
+	 * Find an identity through its socketConnection object
+	 * @param source
+	 * @return
+	 */
+	
+	private Map<String, String> getIdentityByConnection(LocalClient source)
+	{
+		for(Entry<HashMap<String, String>, LocalClient> pair : locals.entrySet())
+		{
+			if (pair.getValue() == source)
+			{
+				return pair.getKey();
+			}
+		}
+		return null;
+	}
+	
+	
+	
 	/**
 	 * Process and possibly reply to IRC messages
 	 * @param source
-	 * @param messageObject
+	 * @param message
 	 */
 	
-	public synchronized void message(FrircConnection source, Message messageObject)
+	public synchronized void message(LocalClient source, Message message)
 	{
+		/**
+		 * NICK
+		 */
+		
 		//associate nick with connection
-		if (messageObject.getType().equals("NICK") && !messageObject.getNick().equals(""))
+		if (message.getType().equals("NICK") && !message.getNick().equals(""))
 		{	
-			String old_nick = "";
-			if (getNickByCon(source) != null) 	old_nick = getNickByCon(source);
-			else								old_nick = messageObject.getNick();
+			//remove old identity map
+			Map<String, String> old_identity = getIdentityByConnection(source);
+			HashMap<String, String> new_identity = identityManager.getIdentityByNick(message.getNick());
+			locals.remove(old_identity);
+			locals.put(new_identity, source);
 			
-			
-			//confirm the nickchange
-			outQueue.get(source).add(new Message(":" + old_nick + "!" + old_nick + "@freenet NICK :" + messageObject.getNick()));
+			if (old_identity != null) // we are dealing with a nickCHANGE
+			{
+				//confirm the nickchange to all local clients
+				for(LocalClient local : locals.values())
+				{
+					local.sendMessage(Message.createNickChangeMessage(old_identity, new_identity));
+				}
+			}
 			
 			//tell client if nick is not a known a WoT identity that we know the user has
-			if (!ownIdentities.contains(getIdentityByNick(messageObject.getNick())))
+			if (!identityManager.getOwnIdentities().contains(new_identity))
 			{
-				outQueue.get(source).add(new Message(":" + SERVERNAME + " NOTICE " + messageObject.getNick() + " :Could not associate that nick with a WoT identity. Reload the plugin if you just added it or check whether it is actually correct. Joining channels will NOT work!"));
+				source.sendMessage(Message.createServerNoticeMessage(message.getNick(), "Could not associate that nick with a WoT identity. Reload the plugin if you just added it or check whether it is actually correct. Joining channels will NOT work!"));
+				source.sendMessage(new Message("QUIT"));
 			}
-
-			associateNickWithConnection(messageObject.getNick(), source);
-			changeNick(old_nick, messageObject.getNick());
 		}
 
 
-		else if (messageObject.getType().equals("USER") && !messageObject.getValue().equals(""))
+		/**
+		 * USER
+		 * Process the server login messages after USER
+		 */
+		else if (message.getType().equals("USER") && !message.getValue().equals(""))
 		{
-			String nick = getNickByCon(source);
-			
-			outQueue.get(source).add(new Message(":" + SERVERNAME + " 001 " + nick + " :Welcome to freenet irc"));
-			outQueue.get(source).add(new Message(":" + SERVERNAME + " 004 " + nick + " " + SERVERNAME + " freenet"));
-			outQueue.get(source).add(new Message(":" + SERVERNAME + " 375 " + nick + " :- Hi!"));
-			outQueue.get(source).add(new Message(":" + SERVERNAME + " 372 " + nick + " :- Welcome!"));
-			outQueue.get(source).add(new Message(":" + SERVERNAME + " 376 " + nick + " :End of /MOTD command"));
+			for(Message loginMessage : Message.createGenericServerLoginMessages(getIdentityByConnection(source)))
+			{
+				source.sendMessage(loginMessage);
+			}
 		}
 
-		else if (messageObject.getType().equals("QUIT"))
+		/**
+		 * QUIT
+		 * Process the QUIT signal (disconnect local connection)
+		 */
+		else if (message.getType().equals("QUIT"))
 		{
-			outQueue.get(source).add(new Message("QUIT"));
+			source.sendMessage(new Message("QUIT"));
 			try {
 				source.getSocket().close();
 			} catch (IOException e) {
 				e.printStackTrace();
 			}
 		}
+
+		/**
+		 * MODE
+		 */
 		
-		else if (messageObject.getType().equals("MODE"))
+		else if (message.getType().equals("MODE"))
 		{
-			String nick = getNickByCon(source);
-			outQueue.get(source).add(new Message(":" + SERVERNAME + " NOTICE " + nick + " :Modes not supported at this time."));
+			source.sendMessage(Message.createServerNoticeMessage(message.getNick(), "Modes not supported at this time."));
 		}
 		
+		/*
 		
-		else if (messageObject.getType().equals("PART"))
+		else if (message.getType().equals("PART"))
 		{
-			String channel = messageObject.getChannel();
+			String channel = message.getChannel();
 			String nick = getNickByCon(source);
 			
 			//quit all of the listening threads for this channel (threads should check with the service itself?, but only if
@@ -188,17 +212,19 @@ public class IRCServer extends Thread {
 			channelUsers.get(channel).remove(nick);
 		}
 		
-		
+/*		
 		
 		/**
 		 * Join a channel
 		 */
 
-		else if (messageObject.getType().equals("JOIN") && !messageObject.getChannel().equals(""))
+		/*
+		
+		else if (message.getType().equals("JOIN") && !message.getChannel().equals(""))
 		{
 			//retrieve the nick associated with the connection
 			String nick = getNickByCon(source);
-			String channel = messageObject.getChannel();
+			String channel = message.getChannel();
 
 			//add the user to the channel
 			if (!channelUsers.containsKey(channel))
@@ -219,7 +245,7 @@ public class IRCServer extends Thread {
 
 
 			//inform all clients in the same channel that the user has joined us
-			for(String channelUser: channelUsers.get(messageObject.getChannel()))
+			for(String channelUser: channelUsers.get(message.getChannel()))
 			{
 				for(FrircConnection connection : nickToInput.get(channelUser))
 				{
@@ -239,7 +265,7 @@ public class IRCServer extends Thread {
 				outQueue.get(source).add(new Message(":" + SERVERNAME + " MODE " + channel + " +nt"));
 				outQueue.get(source).add(new Message(":" + SERVERNAME + " 331 " + nick + " " + channel + " :We eten vandaag hutspot"));
 
-				for(String channelUser: channelUsers.get(messageObject.getChannel()))
+				for(String channelUser: channelUsers.get(message.getChannel()))
 				{
 					outQueue.get(source).add(new Message(":" + SERVERNAME + " 353 " + nick + " = " + channel + " :" + channelUser));
 				}
@@ -250,16 +276,22 @@ public class IRCServer extends Thread {
 			}
 		}
 		
+		
+		*/
+		
 		/*
 		 * WHO
 		 */
 		
-		else if (messageObject.getType().equals("WHO"))
+		
+		/*
+		
+		else if (message.getType().equals("WHO"))
 		{
 			String nick = getNickByCon(source);
-			String channel = messageObject.getChannel();
+			String channel = message.getChannel();
 
-			for(String channelUser: channelUsers.get(messageObject.getChannel()))
+			for(String channelUser: channelUsers.get(message.getChannel()))
 			{
 				outQueue.get(source).add(new Message(":" + SERVERNAME + " 352 " + channelUser + " freenet " + channelUser + " H :0 " + channelUser));
 			}
@@ -267,23 +299,24 @@ public class IRCServer extends Thread {
 			outQueue.get(source).add(new Message("315 " + nick + " " + channel + " :End of /WHO list."));
 		}
 
-		else if (messageObject.getType().equals("PING"))
+		else if (message.getType().equals("PING"))
 		{
-			outQueue.get(source).add(new Message("PONG " + messageObject.getValue()));
+			outQueue.get(source).add(new Message("PONG " + message.getValue()));
 		}
-
+		*/
 
 		/**
 		 * Message for channel
 		 */
 
-		else if (messageObject.getType().equals("PRIVMSG")) 
+		/*
+		else if (message.getType().equals("PRIVMSG")) 
 		{
 			String nick = getNickByCon(source);
 
 			//iterate over all the users(connections) and send them the privmsg, except the originating user!
 
-			for(String channelUser: channelUsers.get(messageObject.getChannel()))
+			for(String channelUser: channelUsers.get(message.getChannel()))
 			{
 				if (nickToInput.get(channelUser) != null)
 				{
@@ -294,7 +327,7 @@ public class IRCServer extends Thread {
 							) 
 						{
 							System.out.println("DEBUG: Message added to some outqueue");
-							outQueue.get(out).add(new Message(":" + nick + "@freenet PRIVMSG " + messageObject.getChannel() + " :" + messageObject.getValue()));
+							outQueue.get(out).add(new Message(":" + nick + "@freenet PRIVMSG " + message.getChannel() + " :" + message.getValue()));
 							
 							break;
 							//TODO: probably some memory leak here...(outQueue never cleaned up)
@@ -303,6 +336,9 @@ public class IRCServer extends Thread {
 				}
 			}
 		}
+	
+		*/
+	
 	}
 
 	public void run()
@@ -321,7 +357,6 @@ public class IRCServer extends Thread {
 				Socket socket = serverSocket.accept();
 				try {
 					new LocalClient(socket, this);  // Handle an incoming Client.
-					new ClientOutput(socket, this);  // Handle an incoming Client.
 				} catch(IOException e) {
 					// If it fails, close the socket,
 					// otherwise the thread will close it:
