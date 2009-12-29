@@ -1,6 +1,19 @@
 Release:
 
-- fix ':'-prefix in message
+
+- create a seperate managing thread for a 'channel'
+- redo distribution of messages to local and remote connections
+
+- output queue selectie voor ontvangen bericht klopt nog steeds niet... komt niet aan :(
+
+
+triggered by conversation:
+INFO   | jvm 7    | 2009/11/20 22:30:56 | Exception in thread "Thread-75" java.lang.NullPointerException
+INFO   | jvm 7    | 2009/11/20 22:30:56 | 	at plugin.frirc.IRCServer.message(IRCServer.java:421)
+INFO   | jvm 7    | 2009/11/20 22:30:56 | 	at plugin.frirc.IRCServer.message(IRCServer.java:164)
+INFO   | jvm 7    | 2009/11/20 22:30:56 | 	at plugin.frirc.ClientInput.run(ClientInput.java:38)
+
+
 - publish the fact that we are leaving a channel to freenet (which is different from a timeout)
 - provide simple instructions when visiting the plugin through http
 - check trust of a hinted identity (calculated trust, not manually assigned)

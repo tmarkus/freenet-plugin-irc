@@ -5,6 +5,14 @@
 
 package plugin.frirc;
 
+/**
+ * IRC server manages:
+ * - ownidentities
+ * - identities
+ * - channelmanagers
+ * - private conversations
+ */
+
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.MalformedURLException;
@@ -14,6 +22,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.ArrayList;
+import java.util.Set;
 
 import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.transform.TransformerConfigurationException;
@@ -41,13 +50,7 @@ import freenet.support.api.Bucket;
 public class IRCServer extends Thread implements FredPluginTalker, ClientGetCallback, RequestClient{  
 	static int PORT=6667; // assign to next available Port.
 	static final String SERVERNAME = "freenetIRCserver";
-	private final int TRY_SPAWN_AGAIN = 3 * 60 * 1000; //ms 
 	
-	private Map<String, ArrayList<FrircConnection>> nickToInput = new HashMap<String, ArrayList<FrircConnection>>();
-	private Map<String, String> nickToUser = new HashMap<String,String>();
-	
-	private HashMap<FrircConnection, ArrayList<Message>> outQueue = new HashMap<FrircConnection, ArrayList<Message>>();
-	private HashMap<String, HashSet<String>> channelUsers = new HashMap<String, HashSet<String>>(); 
 	private ArrayList<HashMap<String, String>> ownIdentities = new ArrayList<HashMap<String, String>>(); //list of my own identities
 	private ArrayList<HashMap<String, String>> identities = new ArrayList<HashMap<String, String>>(); //list of all identities
 	
@@ -57,102 +60,25 @@ public class IRCServer extends Thread implements FredPluginTalker, ClientGetCall
 	
 	private PluginRespirator pr;
 	private PluginTalker talker;
-	private HashMap<String, Long> last_channel_spawn = new HashMap<String, Long>(); 
 	
 	private ServerSocket serverSocket;
 
-	public String getNickByCon(FrircConnection con)
-	{
-		for(String nickItem : nickToInput.keySet())
-		{
-			if (nickToInput.get(nickItem).contains(con))
-			{
-				return nickItem;
-			}
-		}
-		return "ERROR COULD NOT ASSOCIATE CONNECTION WITH NICKNAME";
-	}
 
 	/**
-	 * Check whether a nick is in a channel or not
-	 * @param nick
-	 * @param channel
-	 * @return
+	 * Send a message to a locally connected irc client
 	 */
 	
-	public boolean inChannel(String nick, String channel)
+	public void sendLocalMessage(Message message)
 	{
-		//hack to auto-add a '#' in front of a channel if there isn't one (otherwise it's a user???)
-		if (!channel.contains("#")) channel = "#" + channel;
 		
-		/*
-		for(String channelItem : channelUsers.keySet())
-		{
-			for(String userItem : channelUsers.get(channelItem))
-			{
-				System.out.println(channelItem + " - " + userItem);
-			}
-		}
-		*/
-		
-		if (channelUsers.get(channel) != null)
-		{
-			return channelUsers.get(channel).contains(nick);
-		}
-		return false;
 	}
+	
+	
+	
+	
 	
 	/**
-	 * Retrieve the nicks present in the channel
-	 * @param channel
-	 * @return
-	 */
-	
-	public HashSet<String> getNicksInChannel(String channel)
-	{
-		return channelUsers.get(channel);
-	}
-	
-	private synchronized void associateNickWithConnection(String nick,  FrircConnection con)
-	{
-		if (nickToInput.containsKey(nick))
-		{
-			//remove existing association?
-			String old_nick = getNickByCon(con);
-			nickToInput.remove(old_nick);
-			
-			try
-			{
-			//associate new nick
-			nickToInput.get(nick).add(con);
-			}
-			catch(Exception e)
-			{
-				System.err.println("Failed to add connection to new nickname");
-			}
-			
-			
-			//associate new nick with username and remove new association
-			nickToUser.put(nick, nickToUser.get(old_nick));
-			nickToUser.remove(old_nick);
-		}
-		else
-		{
-			nickToInput.put(nick, new ArrayList<FrircConnection>());
-			nickToInput.get(nick).add(con);
-		}
-	}
-
-	private synchronized void initOutQueue(FrircConnection con)
-	{
-		if (!outQueue.containsKey(con))
-		{
-			outQueue.put(con, new ArrayList<Message>());
-		}
-	}
-
-	/**
-	 * Receive a message from a client, both remote and local clients
+	 * Receive a message from a local client
 	 * @param con
 	 * @param message
 	 */
@@ -160,30 +86,14 @@ public class IRCServer extends Thread implements FredPluginTalker, ClientGetCall
 	public void message(FrircConnection con, String message)
 	{
 		Message messageObject = new Message(message);
-		initOutQueue(con);
 		message(con, messageObject);
+		
+		//message channel specific? hand it over to the correct Channelmanager
+		
+		//channel something generic? process it in the ircserver
+		
 	}
 
-	public void messageFromFreenet(FrircConnection con, String id, String channel, String message, long timestamp)
-	{
-		//resolve the id to a nickname
-		String nick = getNickByID(id);
-
-		//associate FrircConnection with nickname
-		associateNickWithConnection(nick, con);
-
-		//check if the nickname is in the channel already
-		if (!channelUsers.get(channel).contains(nick))
-		{
-			channelUsers.get(channel).add(nick);
-
-			// not -> simulate join message
-			message(con, new Message("JOIN " + channel));
-		}
-
-		// emulate message coming from the nick
-		message(con, new Message("PRIVMSG " + channel + " :" + message));
-	}
 
 	/**
 	 * Associate a nick with a WoT identity
@@ -278,23 +188,28 @@ public class IRCServer extends Thread implements FredPluginTalker, ClientGetCall
 		//associate nick with connection
 		if (messageObject.getType().equals("NICK") && !messageObject.getNick().equals(""))
 		{	
+			String old_nick = "";
+			if (getNickByCon(source) != null) 	old_nick = getNickByCon(source);
+			else								old_nick = messageObject.getNick();
+			
+			
 			//confirm the nickchange
-			outQueue.get(source).add(new Message(":" + getNickByCon(source) + "!" + nickToUser.get(getNickByCon(source)) + "@freenet NICK :" + messageObject.getNick()));
+			outQueue.get(source).add(new Message(":" + old_nick + "!" + old_nick + "@freenet NICK :" + messageObject.getNick()));
 			
 			//tell client if nick is not a known a WoT identity that we know the user has
 			if (!ownIdentities.contains(getIdentityByNick(messageObject.getNick())))
 			{
 				outQueue.get(source).add(new Message(":" + SERVERNAME + " NOTICE " + messageObject.getNick() + " :Could not associate that nick with a WoT identity. Reload the plugin if you just added it or check whether it is actually correct. Joining channels will NOT work!"));
 			}
-			
+
 			associateNickWithConnection(messageObject.getNick(), source);
+			changeNick(old_nick, messageObject.getNick());
 		}
 
 
 		else if (messageObject.getType().equals("USER") && !messageObject.getValue().equals(""))
 		{
 			String nick = getNickByCon(source);
-			nickToUser.put(nick, messageObject.getUser());
 			
 			outQueue.get(source).add(new Message(":" + SERVERNAME + " 001 " + nick + " :Welcome to freenet irc"));
 			outQueue.get(source).add(new Message(":" + SERVERNAME + " 004 " + nick + " " + SERVERNAME + " freenet"));
@@ -465,123 +380,21 @@ public class IRCServer extends Thread implements FredPluginTalker, ClientGetCall
 	}
 
 
-	/**
-	 * Method for FreenetClient's that signal them leaving a channel (due to timeout or other)
-	 * @param connection
-	 */
 	
-	public void leaveChannel(FreenetClient connection)
-	{
-		//simulate a leave message from our client
-		message(connection, new Message("PART " + connection.getChannel()));
 
-		//disassociate nick with connection
-		nickToInput.remove( getNickByCon(connection) );
-	}
-	
-	public synchronized void setupWoTListener(HashMap<String, String> identity, String channel)
-	{
-		
-		//check whether identity already has a listening thread
-		if (channelUsers.get(channel) != null && !channelUsers.get(channel).contains(identity.get("nick")))
-		{
-			//set an async fetch for the long-term message (every day or something), if it succeeds setup a thread to follow this identity+channel combo
-			FetchContext fc = low_priority_hl.getFetchContext();
-			fc.maxNonSplitfileRetries = 1;
-			fc.followRedirects = true;
-			fc.ignoreStore = true;
-	
-			FreenetURI fetchURI;
-			try {
-				fetchURI = new FreenetURI("SSK@"+identity.get("ID") + "/" + Frirc.NAMESPACE + "-" + Frirc.cleanChannel(channel) +  "-" + Frirc.currentIndex() + "-0/feed");
-				hl.fetch(fetchURI, 20000, this, this, fc);
-				System.out.println("Trying to see whether a user is publishing at: " + fetchURI);
-			} catch (MalformedURLException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			} catch (FetchException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
-		}
-	}
-		
-	/**
-	 * Create a new thread that will listen for messages specific to a channel+identity	
-	 * @param requestURI
-	 */
-		
-	public synchronized void createChannelIdentityThread(FreenetURI requestURI)	
-	{
-		//extract channel from URI
-		String channel = Frirc.requestURItoChannel(requestURI); 
-			
-		//extract id from URI
-		String id = Frirc.requestURItoID(requestURI);
-		String nick = getNickByID(id);
 
-		if (nick == "UNRESOLVED")
-		{
-			Logger.error(this, "Could not resolve the identity " + id + " to a nick through my known WoT. Not creating FreenetClientInput thread.");
-			return;
-		}
-		
-		//don't create a listening thread for our own messages
-		for(Map<String, String> identity : ownIdentities)
-		{
-			if (identity.get("ID").equals(id)) return;
-		}
-		
-		//don't setup another thread if the nick is already in the channel
-		if (channelUsers.get(channel).contains(nick)) return;
-		
-		
-		System.out.println("Found an identity posting channel content! wow! setting up a dedicated thread to follow him/her/it!"); 
-		
-		try {
-			FreenetURI newRequestURI = new FreenetURI("SSK@" + id + "/" + Frirc.NAMESPACE + "-" + Frirc.cleanChannel(channel));
-
-			//query each identity we know about for the channel (maxretries = 1)
-			//and create a handler to deal with the identity
-			FreenetClientInput input = new FreenetClientInput(null ,this, hl, low_priority_hl, channel, nick);
-			input.setRequestURI(newRequestURI);
-			
-			//init listener
-			input.start();
-
-			//associate FrircConnection with nickname
-			associateNickWithConnection(nick, input);
-
-			//check if the nickname is in the channel already
-			if (!channelUsers.get(channel).contains(nick))
-			{
-				channelUsers.get(channel).add(nick);
-
-				// not -> simulate join message
-				message(input, new Message("JOIN " + channel));
-			}
-		} catch (MalformedURLException e) {
-			e.printStackTrace();
-		} catch (TransformerConfigurationException e) {
-			e.printStackTrace();
-		} catch (ParserConfigurationException e) {
-			e.printStackTrace();
-		} catch (TransformerFactoryConfigurationError e) {
-			e.printStackTrace();
-		} 
-	}
 
 	/**
 	 * Retrieve the personal WoT identities to associate with nicknames
 	 */
 	
-	private void getOwnIdentities(){
+	private void sendFCPOwnIdentities(){
 		SimpleFieldSet sfs = new SimpleFieldSet(true);
 		sfs.putOverwrite("Message", "GetOwnIdentities");
 		talker.send(sfs, null);
 	}
 	
-	private synchronized void getAllIdentities(String channel, String nick)
+	private synchronized void sendFCPAllIdentities(String channel, String nick)
 	{
 		PluginTalker talker;
 		try {
@@ -599,94 +412,18 @@ public class IRCServer extends Thread implements FredPluginTalker, ClientGetCall
 		}
 	}
 	
-	/**
-	 * Publish our local channel communication to freenet
-	 * @param con
-	 */
-
-	private void setupFreenetPublisher(String nick, String channel, FrircConnection con)
+	public ArrayList<HashMap<String, String>> getAllIdentities()
 	{
-		HashMap<String, String> identity = getIdentityByNick(nick);
-		String insert = "SSK@" + identity.get("insertID") + "/" + Frirc.NAMESPACE + "-" + Frirc.cleanChannel(channel);
-		String request = "SSK@" + identity.get("ID") + "/" + Frirc.NAMESPACE + "-" + Frirc.cleanChannel(channel);
-
-		try {
-			FreenetURI insertURI = new FreenetURI(insert);
-			FreenetURI requestURI = new FreenetURI(request);
-
-			try {
-				//create new freenet client output thread
-				FreenetClientOutput output = new FreenetClientOutput(con.getSocket(), this, hl, low_priority_hl, channel, nick);
-				
-				output.setRequestURI(requestURI);
-				output.setInsertURI(insertURI);
-				output.start();
-
-				associateNickWithConnection(nick, output);
-				initOutQueue(output);
-			} catch (TransformerConfigurationException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			} catch (ParserConfigurationException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			} catch (TransformerFactoryConfigurationError e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
-		} catch (MalformedURLException e) {
-			// TODO Auto-generated catch block
-			Logger.error("ERROR", "Unable to setup freenet output connection");
-			e.printStackTrace();
-		}
+		return this.identities;
 	}
-
-	public synchronized Message getMessageToSend(FrircConnection con)
+	
+	public ArrayList<HashMap<String, String>> getOwnIdentities()
 	{
-		
-		if (con.isLocal())
-		{
-			for(FrircConnection conItem : outQueue.keySet())
-			{
-				if (outQueue.get(conItem).size() > 0) 
-				{
-					if ( conItem.getSocket() != null && conItem.getSocket().equals(con.getSocket()) && conItem.isLocalClientInput() )
-					{
-							return outQueue.get(conItem).remove(0);
-					}
-					else if (conItem.getSocket() == null && conItem.isFreenetClientInput())
-					{
-						return outQueue.get(conItem).remove(0);
-					}
-				}
-			}
-		}
-		else
-		{
-			for(FrircConnection conItem : outQueue.keySet())
-			{
-				if (outQueue.get(conItem).size() > 0)
-				{
-					if (conItem.getSocket() != null && conItem.getSocket().equals(con.getSocket()))
-					{
-						synchronized (outQueue.get(conItem))
-						{
-							if (outQueue.get(conItem).get(0).getChannel().equals(con.getChannel()) && !con.isFreenetClientInput() )
-							{
-									return outQueue.get(conItem).remove(0);
-							}
-						}
-					}
-				}
-			}
-		}
-
-		
-		
-		
-		return null;
+		return this.ownIdentities;
 	}
-
+	
+	
+	
 	public IRCServer(HighLevelSimpleClient hl, HighLevelSimpleClient low_priority_hl, PluginRespirator pr)
 	{
 		this.hl = hl;
@@ -771,34 +508,31 @@ public class IRCServer extends Thread implements FredPluginTalker, ClientGetCall
 	}
 	
 	
+
+	
+	
 	/**
-	 * Method called upon receiving an FCP message, determines message type and calls correct method
+	 * Process the WoT fcp message containing our identities and add them to the local store
+	 * @param sfs
 	 */
 	
-	@Override
-	public void onReply(String plugin, String channel, SimpleFieldSet sfs,
-			Bucket arg3) {
+	private void addOwnIdentities(SimpleFieldSet sfs)
+	{
+		int i = 0;
 		try {
-			System.out.println("Message received = " + sfs.get("Message"));
-			
-			
-			if (sfs.getString("Message").equals("OwnIdentities"))
+			while(!sfs.getString("Identity"+i).equals(""))
 			{
-				addOwnIdentities(sfs);
+				HashMap<String, String> identity = new HashMap<String,String>();
+				identity.put("ID", sfs.getString("RequestURI"+i).split("/")[0].replace("USK@", ""));
+				identity.put("insertID", sfs.getString("InsertURI"+i).split("/")[0].replace("USK@", ""));
+				identity.put("nick", sfs.getString("Nickname"+i));
+
+				ownIdentities.add(identity);
+				System.out.println("Identity added from WoT: " + identity.get("nick") + " (" + identity.get("ID") + ")");
+				++i;
 			}
-			else if (sfs.getString("Message").equals("Identities"))
-			{
-				addIdentities(sfs, channel);
-			}
-			else
-			{
-				System.out.println("Message received = " + sfs.get("OriginalMessage"));
-				System.out.println("Message received = " + sfs.get("Description"));
-			}
-		} catch (FSParseException e) { //no message field, shouldn't happen
-			e.printStackTrace();
+		} catch (FSParseException e) { //triggered when we've reached the end of the identity list
 		}
-		
 	}
 
 	
@@ -825,88 +559,8 @@ public class IRCServer extends Thread implements FredPluginTalker, ClientGetCall
 			//e.printStackTrace();
 			//System.out.println("Reached end of identity list");
 		}
-	
-		//keep listening to our trusted identities, all the time
-		//setup threads where needed, loop over just discovered created identities
-		for(HashMap<String, String> identity : identities)
-		{
-			if (Integer.parseInt(identity.get("Value")) >= 0)
-			{
-				setupWoTListener(identity, channel);
-			}
-		}
-		
-		doMaintenance(channel);
 	}
 	
-	/**
-	 * Perform various maintenance tasks for the IRC server
-	 * @param channel
-	 */
-	
-	private void doMaintenance(String channel)
-	{
-		while(true)
-		{
-			if (last_channel_spawn.get(channel) == null || last_channel_spawn.get(channel) < (System.currentTimeMillis() - TRY_SPAWN_AGAIN))
-			{
-				System.out.println("Setting up listeners...");
-				last_channel_spawn.put(channel, System.currentTimeMillis()); //timestamp latest attempt to setup listeners
-
-				//get trust tree for which nick? (an instance of OwnIdentity)
-				String nick = "";
-				for(String nickItem : channelUsers.get(channel))
-				{
-					for(Map<String, String> identity : ownIdentities)
-					{
-						if (identity.get("nick").equals(nickItem))
-						{
-							nick = nickItem;
-						}
-					}
-				}
-				
-				getAllIdentities(channel, nick);
-				return;
-			}
-			
-			
-			try {
-				Thread.sleep(500);
-			} catch (InterruptedException e) {
-				e.printStackTrace();
-			}
-			
-			//stop listening if the server is no longer running
-			if (stopThread()) return;
-		}
-
-	}
-	
-	/**
-	 * Process the WoT fcp message containing our identities and add them to the local store
-	 * @param sfs
-	 */
-	
-	private void addOwnIdentities(SimpleFieldSet sfs)
-	{
-		int i = 0;
-		try {
-			while(!sfs.getString("Identity"+i).equals(""))
-			{
-				HashMap<String, String> identity = new HashMap<String,String>();
-				identity.put("ID", sfs.getString("RequestURI"+i).split("/")[0].replace("USK@", ""));
-				identity.put("insertID", sfs.getString("InsertURI"+i).split("/")[0].replace("USK@", ""));
-				identity.put("nick", sfs.getString("Nickname"+i));
-
-				ownIdentities.add(identity);
-				System.out.println("Identity added from WoT: " + identity.get("nick") + " (" + identity.get("ID") + ")");
-				++i;
-			}
-		} catch (FSParseException e) { //triggered when we've reached the end of the identity list
-		}
-	}
-
 	/*
 	 * Request client stuff
 	 * 
@@ -919,10 +573,13 @@ public class IRCServer extends Thread implements FredPluginTalker, ClientGetCall
 	public void onFailure(FetchException arg0, ClientGetter arg1,
 			ObjectContainer arg2) {
 		
-		System.out.println("Could not find identity listening on channel key: "  + arg1.getURI());
+		//System.out.println("Could not find identity listening on channel key: "  + arg1.getURI());
 		
 	}
 
+	
+	
+	
 	/**
 	 * Only success currently handled is a successful poll for a recent identity message in a specific channel 
 	 * TODO: this will need to be extended to something smarter in the future

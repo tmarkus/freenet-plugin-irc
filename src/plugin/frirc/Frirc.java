@@ -101,12 +101,27 @@ public class Frirc implements FredPlugin, FredPluginHTTP, FredPluginThreadless, 
 		}
 		return id;
 	}
-	
+
 	public static String requestURItoID(FreenetURI requestURI)
 	{
 		return requestURItoID(requestURI.toString());
 	}
 
+	
+	public static int requestURIToIndex(FreenetURI requestURI)
+	{
+		String right = requestURI.toString().split("/")[1];
+		return Integer.parseInt( right.split("-")[-1] );
+	}
+	
+
+	public static int requestURIToWaypoint(FreenetURI requestURI)
+	{
+		String right = requestURI.toString().split("/")[1];
+		return Integer.parseInt( right.split("-")[-2] );
+	}
+
+	
 	/**
 	 * Extract the channelname from a full request URI (a channel feed with an index etc etc)
 	 * @param requestURI
@@ -121,7 +136,7 @@ public class Frirc implements FredPlugin, FredPluginHTTP, FredPluginThreadless, 
 	public static FreenetURI idToRequestURI(String id, String channel)
 	{
 		try {
-			FreenetURI request =  new FreenetURI("SSK@" + id + "/" + Frirc.NAMESPACE + "-" + cleanChannel(channel));
+			FreenetURI request =  new FreenetURI("SSK@" + id + "/" + Frirc.NAMESPACE + "-" + cleanChannel(channel) + "-" + Frirc.currentIndex() + "-0/feed");
 			return request;
 		} catch (MalformedURLException e) {
 			e.printStackTrace();
@@ -134,5 +149,18 @@ public class Frirc implements FredPlugin, FredPluginHTTP, FredPluginThreadless, 
 		return channel.replace("#", "");
 	}
 
-	
+	public static FreenetURI getNextIndexURI(FreenetURI uri)
+	{
+		String channel = requestURItoChannel(uri);
+		String id = requestURItoID(uri);
+		int waypoint = requestURIToWaypoint(uri);
+		int index = requestURIToIndex(uri);
+		
+		try {
+			return  new FreenetURI("SSK@" + id + "/" + Frirc.NAMESPACE + "-" + cleanChannel(channel) + "-" + waypoint + "-" + index+1 + "/feed");
+		} catch (MalformedURLException e) {
+			e.printStackTrace();
+			return null;
+		}
+	}
 }

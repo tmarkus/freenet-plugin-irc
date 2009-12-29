@@ -7,6 +7,8 @@ package plugin.frirc;
 import java.io.StringWriter;
 import java.net.MalformedURLException;
 import java.net.Socket;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Random;
 
@@ -35,18 +37,25 @@ import freenet.client.async.ClientPutCallback;
 import freenet.keys.FreenetURI;
 import freenet.support.SimpleReadOnlyArrayBucket;
 
-public class FreenetClientOutput extends FreenetClient implements ClientPutCallback, ClientGetCallback {
+public class FreenetClientOutput implements ClientPutCallback, ClientGetCallback {
 
 	private FreenetURI insertURI;
 	private FreenetURI requestURI;
 	private long latest_edition = 0;
+	private boolean calibrated;
+	private HashMap<String, String> identity;
+	private ChannelManager channelmanager;
+	long last_startpoint = 0;
+	HighLevelSimpleClient hl;
 	
-	
-	public FreenetClientOutput(Socket socket, IRCServer server, HighLevelSimpleClient priority, HighLevelSimpleClient low_priority, String channel, String nick) throws TransformerConfigurationException, ParserConfigurationException, TransformerFactoryConfigurationError {
-		super(socket, priority, low_priority, channel, nick);
-		this.server = server;
+	public FreenetClientOutput(HighLevelSimpleClient priority, HighLevelSimpleClient low_priority, ChannelManager channelmanager, HashMap<String, String> identity) throws TransformerConfigurationException, ParserConfigurationException, TransformerFactoryConfigurationError {
 
-		System.out.println("CREATING FREENET OUTPUT THREAD FOR: " + nick);
+		this.identity = identity;
+		this.channelmanager = channelmanager;
+		this.hl = hl;
+		requestURI = Frirc.idToRequestURI(identity.get("ID"), channelmanager.getChannel());
+		
+		System.out.println("CREATING FREENET OUTPUT THREAD FOR: " + identity.get("nick"));
 	}
 
 	public void setInsertURI(FreenetURI insertURI)
@@ -63,9 +72,6 @@ public class FreenetClientOutput extends FreenetClient implements ClientPutCallb
 	public void onFailure(InsertException arg0, BaseClientPutter arg1, ObjectContainer arg2) {
 	
 		//keep track of the uris and skip calling the various functions if we've already processed it
-		if (isOldFailedURI(arg1.getURI())) return;
-		if (stopThread()) return;
-		
 		System.out.println("ER GING WAT MIS MET HET INSERTEN VAN EEN FILE");
 		arg0.printStackTrace();
 
@@ -110,12 +116,7 @@ public class FreenetClientOutput extends FreenetClient implements ClientPutCallb
 
 	public synchronized void onFailure(FetchException arg0, ClientGetter arg1, ObjectContainer arg2) {
 
-		//keep track of the uris and skip calling the various functions if we've already processed it
-		if (isOldFailedURI(arg1.getURI())) return;
-		if (stopThread()) return;
-		
 		System.out.println("Failed! " + arg1.getURI());
-		
 		
 		if (!calibrated)
 		{
@@ -127,14 +128,8 @@ public class FreenetClientOutput extends FreenetClient implements ClientPutCallb
 	}
 
 	@Override
-	public synchronized void onSuccess(FetchResult arg0, ClientGetter arg1,
-			ObjectContainer arg2) {
+	public synchronized void onSuccess(FetchResult arg0, ClientGetter arg1, ObjectContainer arg2) {
 
-		//keep track of the uris and skip calling the various functions if we've already processed it
-		if (isOldFailedURI(arg1.getURI())) return;
-		if (stopThread()) return;
-
-		
 		if (!calibrated)
 		{
 			//index already exists? increase the count with one and try again
@@ -150,34 +145,20 @@ public class FreenetClientOutput extends FreenetClient implements ClientPutCallb
 	{
 		//request a list of nicks in the channel
 		//choose n random identities   /n == 1 (just to start with)
-		HashSet<String> nicks = server.getNicksInChannel(channel);
+		HashSet<HashMap<String,String>> identities = channelmanager.getIdentities();
 		
 		Random generator = new Random();
-		int index = generator.nextInt(nicks.size());
-		System.out.println(index);
+		int index = generator.nextInt(identities.size());
+		HashMap<String, String> randomIdentity = new ArrayList<HashMap<String,String>>(identities).get(index);
 		
-		//resolve these nicks to id's, add both to the XML
-		String nick = (String) (nicks.toArray()[index]);
-		
-		try
-		{
-			String requestURI = server.getIdentityByNick(nick).get("ID");
-			
-			//add them to the xml
-			Element identities = xml.createElement("Identities");
-			Element identity = xml.createElement("Identity");
-			identity.setTextContent(requestURI);
-	
-			identities.appendChild(identity);
-			message.appendChild(identities);
-		}
-		catch(NullPointerException e)
-		{
-			System.out.println("NullpointerException at nick: " + nick);
-			e.printStackTrace();
-		}
-		
-		}
+		//add them to the xml
+		Element identitiesElement = xml.createElement("Identities");
+		Element identityElement = xml.createElement("Identity");
+		identityElement.setTextContent(Frirc.idToRequestURI(randomIdentity.get("ID"), channelmanager.getChannel()).toString());
+
+		identitiesElement.appendChild(identityElement);
+		message.appendChild(identitiesElement);
+	}
 	
 	
 	private synchronized void pushChannelPing()
@@ -302,47 +283,5 @@ public class FreenetClientOutput extends FreenetClient implements ClientPutCallb
 			e.printStackTrace();
 		}
 	}
-
-	public void run()
-	{
-		
-		startPublishing();
-		
-		while(true)
-		{
-			if (calibrated)
-			{
-				Message message = server.getMessageToSend(this);
-				
-				if (message != null)
-				{
-					System.out.println("Message received");
-					if (message.getType().equals("PRIVMSG"))
-					{
-						System.out.println("Sending message");
-						pushPrivMessage(message);
-					}
-				}
-			
-				//ping the channel if the time index changed
-				if (last_startpoint != Frirc.currentIndex())
-				{
-					pushChannelPing();
-				}
-			}
-
-			if (stopThread()) return;
-			
-			try {
-				Thread.sleep(100);
-			} catch (InterruptedException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
-		}
-
-	}
-
-	
 
 }
