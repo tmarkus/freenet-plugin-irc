@@ -2,6 +2,18 @@ Release:
 
 
 - create a seperate managing thread for a 'channel'
+
+-- implement setup phase (opening a local connection and sending a nick + name)
+-- implement joins (only single user to a channel)
+-- setup channelthreadlisteners (usks)
+-- send received freenetclientinput to local clients
+
+
+
+-- expire old connections
+-- 
+
+
 - redo distribution of messages to local and remote connections
 
 - output queue selectie voor ontvangen bericht klopt nog steeds niet... komt niet aan :(

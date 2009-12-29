@@ -1,7 +1,5 @@
 package plugin.frirc;
 
-import java.net.MalformedURLException;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -15,8 +13,6 @@ import freenet.client.HighLevelSimpleClient;
 import freenet.client.async.ClientGetCallback;
 import freenet.client.async.ClientGetter;
 import freenet.keys.FreenetURI;
-import freenet.node.FSParseException;
-import freenet.support.SimpleFieldSet;
 
 public class ChannelManager extends Thread implements ClientGetCallback{
 
