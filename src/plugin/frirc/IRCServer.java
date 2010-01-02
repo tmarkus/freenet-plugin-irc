@@ -13,38 +13,19 @@ package plugin.frirc;
 
 import java.io.IOException;
 import java.net.InetAddress;
-import java.net.MalformedURLException;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.HashMap;
-import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.ArrayList;
-import java.util.Set;
 import java.util.Map.Entry;
 
 import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.transform.TransformerConfigurationException;
 import javax.xml.transform.TransformerFactoryConfigurationError;
 
-import com.db4o.ObjectContainer;
-
-import freenet.client.FetchContext;
-import freenet.client.FetchException;
-import freenet.client.FetchResult;
-import freenet.client.HighLevelSimpleClient;
-import freenet.client.async.ClientGetCallback;
-import freenet.client.async.ClientGetter;
-import freenet.keys.FreenetURI;
-import freenet.node.FSParseException;
-import freenet.node.RequestClient;
-import freenet.pluginmanager.FredPluginTalker;
-import freenet.pluginmanager.PluginNotFoundException;
 import freenet.pluginmanager.PluginRespirator;
-import freenet.pluginmanager.PluginTalker;
-import freenet.support.Logger;
-import freenet.support.SimpleFieldSet;
-import freenet.support.api.Bucket;
 
 public class IRCServer extends Thread {  
 	static final int PORT = 6667; // assign to next available Port.
@@ -55,6 +36,7 @@ public class IRCServer extends Thread {
 	
 	//local outgoing connections
 	private HashMap<HashMap<String, String>, LocalClient> locals = new HashMap<HashMap<String, String>, LocalClient>();
+	private List<ChannelManager> channels = new ArrayList<ChannelManager>();
 	
 	
 	public IRCServer(PluginRespirator pr)
@@ -107,6 +89,38 @@ public class IRCServer extends Thread {
 		return null;
 	}
 	
+	/**
+	 * Retrieve a ChannelManager by means of a channelString
+	 * @param channel
+	 * @return
+	 */
+	
+	private ChannelManager getChannelManager(String channel)
+	{
+		ChannelManager manager = null;
+		for(ChannelManager channelManagerItem : channels)
+		{
+			if (channelManagerItem.getChannel().equals(channel)) manager = channelManagerItem;
+		}
+		if (manager == null)
+		{
+			manager = new ChannelManager(channel, this, pr);
+			channels.add(manager);
+		}
+		return manager;
+	}
+	
+	
+	public void sendAllLocalClientsInChannel(ChannelManager manager, Message message)
+	{
+		for(HashMap<String, String> identityItem : locals.keySet())
+		{
+			if (manager.inChannel(identityItem))
+			{
+				locals.get(identityItem).sendMessage(message);
+			}
+		}
+	}
 	
 	
 	/**
@@ -182,102 +196,57 @@ public class IRCServer extends Thread {
 		{
 			source.sendMessage(Message.createServerNoticeMessage(message.getNick(), "Modes not supported at this time."));
 		}
-		
-		/*
-		
-		else if (message.getType().equals("PART"))
-		{
-			String channel = message.getChannel();
-			String nick = getNickByCon(source);
-			
-			//quit all of the listening threads for this channel (threads should check with the service itself?, but only if
-			// the source is a FreenetClientInput  (isRemote)
-			
-			//send confirmation to all local clients in the same channel
-			for(String channelUser : channelUsers.get(channel))
-			{
-				if (nickToInput.get(channelUser) != null)
-				{
-					for(FrircConnection connection : nickToInput.get(channelUser))
-					{
-						if (connection.isLocal())
-						{
-							outQueue.get(source).add(new Message(":" + nick + "!" + nick + "@freenet PART " + channel));
-						}
-					}
-				}
-			}
 
-			//remove nick from channel
-			channelUsers.get(channel).remove(nick);
-		}
-		
-/*		
 		
 		/**
 		 * Join a channel
 		 */
 
-		/*
-		
 		else if (message.getType().equals("JOIN") && !message.getChannel().equals(""))
 		{
 			//retrieve the nick associated with the connection
-			String nick = getNickByCon(source);
 			String channel = message.getChannel();
-
-			//add the user to the channel
-			if (!channelUsers.containsKey(channel))
+			HashMap<String, String> identity = (HashMap<String, String>) getIdentityByConnection(source);
+			
+			ChannelManager manager = getChannelManager(channel); 
+			manager.addIdentity(identity);
+			
+			//inform all localClients in the same channel that the user has joined
+			sendAllLocalClientsInChannel(manager, Message.createJOINMessage(identity, channel)); 
+			
+			//inform the joining client about who is in the channel
+			source.sendMessage(Message.createChannelModeMessage(channel));
+			for(Message messageItem : Message.createChannelJoinNickList(identity, channel, manager.getIdentities()))
 			{
-				channelUsers.put(channel, new HashSet<String>());
-			}
-			channelUsers.get(channel).add(nick);
-
-			if (source.getClass().toString().equals("class plugin.frirc.ClientInput"))
-			{
-				//setup listeners to find other users in this channel (currently query FULL wot)
-				getAllIdentities(channel, nick);
-
-				//setup freenet output for the messages from the local joiner
-				setupFreenetPublisher(nick, channel, source);
-			}
-
-
-
-			//inform all clients in the same channel that the user has joined us
-			for(String channelUser: channelUsers.get(message.getChannel()))
-			{
-				for(FrircConnection connection : nickToInput.get(channelUser))
-				{
-					System.out.println("channelUser = " + channelUser);
-					if (connection.isLocal())
-					{
-						System.out.println("Join message sent to " + channelUser + " about " + nick);
-						outQueue.get(connection).add(new Message(":" + nick+"!"+nick + "@freenet" + " JOIN " + channel));
-					}
-				}
-			}
-
-			//inform the joining clients about who is 
-			if (source.isLocal())
-			{
-
-				outQueue.get(source).add(new Message(":" + SERVERNAME + " MODE " + channel + " +nt"));
-				outQueue.get(source).add(new Message(":" + SERVERNAME + " 331 " + nick + " " + channel + " :We eten vandaag hutspot"));
-
-				for(String channelUser: channelUsers.get(message.getChannel()))
-				{
-					outQueue.get(source).add(new Message(":" + SERVERNAME + " 353 " + nick + " = " + channel + " :" + channelUser));
-				}
-
-				outQueue.get(source).add(new Message(":" + SERVERNAME + " 366 " + nick + " " + channel + " :End of /NAMES list"));
-
-				//outQueue.get(con).add(new Message("TOPIC " + messageObject.getValue() + ":We eten hutspot vandaag"));
+				source.sendMessage(messageItem);
 			}
 		}
 		
+		/**
+		 * PING
+		 */
 		
-		*/
+		else if (message.getType().equals("PING"))
+		{
+			source.sendMessage(new Message("PONG " + message.getValue()));
+		}
+
+		/**
+		 * PART
+		 */
+		
+		else if (message.getType().equals("PART"))
+		{
+			ChannelManager manager = getChannelManager(message.getChannel());
+			HashMap<String, String> identity = (HashMap<String, String>) getIdentityByConnection(source);
+			
+			//inform all localClients in the same channel that the user has left
+			sendAllLocalClientsInChannel(manager, Message.createPartMessage(identity, message.getChannel()));
+			manager.removeIdentity(identity);
+		}
+		
+		
+		
 		
 		/*
 		 * WHO
@@ -299,10 +268,6 @@ public class IRCServer extends Thread {
 			outQueue.get(source).add(new Message("315 " + nick + " " + channel + " :End of /WHO list."));
 		}
 
-		else if (message.getType().equals("PING"))
-		{
-			outQueue.get(source).add(new Message("PONG " + message.getValue()));
-		}
 		*/
 
 		/**
@@ -362,6 +327,11 @@ public class IRCServer extends Thread {
 					// otherwise the thread will close it:
 					socket.close();
 					serverSocket.close();
+					
+					System.out.println("Closing IRC server...");
+					locals.clear();
+					channels.clear();
+					
 					
 					return;
 				} catch (TransformerConfigurationException e) {

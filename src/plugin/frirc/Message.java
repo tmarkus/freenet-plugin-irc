@@ -6,6 +6,7 @@ package plugin.frirc;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 
@@ -324,8 +325,34 @@ public class Message {
 		return messages;
 	}
 
-	private static Message createGenericServerLoginMessage(Map<String, String> identity, String code, String message)
+	public static Message createGenericServerLoginMessage(Map<String, String> identity, String code, String message)
 	{
 		return new Message(":" + IRCServer.SERVERNAME + " "+code+" " + identity.get("nick") + " " + message);
 	}
+
+	public static Message createChannelModeMessage(String channel)
+	{
+		return new Message(":" + IRCServer.SERVERNAME + " MODE " + channel + " +nt");
+	}
+	
+	public static List<Message> createChannelJoinNickList(HashMap<String, String> identity, String channel, HashSet<HashMap<String, String>> channelIdentities)
+	{
+		List<Message> messages = new ArrayList<Message>();
+		
+		for(Map<String, String> channelIdentity : channelIdentities)
+		{
+			messages.add(new Message(":" + IRCServer.SERVERNAME + " 353 " + identity.get("nick") + " = " + channel + " :" + channelIdentity.get("nick")));
+		}
+		
+		messages.add(new Message(":" + IRCServer.SERVERNAME + " 366 " + identity.get("nick") + " " + channel + " :End of /NAMES list"));
+
+		return messages;
+	}
+	
+	public static Message createPartMessage(Map<String, String> identity, String channel)
+	{
+		return new Message(":" + identity.get("nick") + "!" + identity.get("nick") + "@freenet PART " + channel);
+
+	}
+	
 }

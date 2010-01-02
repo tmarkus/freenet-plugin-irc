@@ -3,10 +3,9 @@ Release:
 
 - create a seperate managing thread for a 'channel'
 
--- implement joins (only single user to a channel)
--- calibrate our own connection
+-- calibrate our own publishing 'connection' to freenet
 -- push a channelping if calibrated
--- setup channelthreadlisteners (usks) for all trusted identities?
+-- setup channelthreadlisteners (usks) for all trusted identities at rank N?
 -- calibrate a connection
 -- update the identities in the channel accordingly when calibrated
 -- process privmsgs

@@ -36,6 +36,10 @@ public class ChannelManager extends Thread implements ClientGetCallback{
 	
 	public ChannelManager(String channel, IRCServer server, PluginRespirator pr)
 	{
+		//schedule all the requests from this application with a high priority class so they should finish sooner
+		hl = pr.getNode().clientCore.makeClient(RequestStarter.MAXIMUM_PRIORITY_CLASS);
+		low_priority_hl = pr.getNode().clientCore.makeClient(RequestStarter.PREFETCH_PRIORITY_CLASS);
+		
 		this.channel = channel;
 		this.server = server;
 		
@@ -50,11 +54,6 @@ public class ChannelManager extends Thread implements ClientGetCallback{
 		fc2.followRedirects = true;
 		fc2.ignoreStore = true;
 		this.ULPRFC = fc2;
-	
-		//schedule all the requests from this application with a high priority class so they should finish sooner
-		hl = pr.getNode().clientCore.makeClient(RequestStarter.MAXIMUM_PRIORITY_CLASS);
-		low_priority_hl = pr.getNode().clientCore.makeClient(RequestStarter.PREFETCH_PRIORITY_CLASS);
-	
 	}
 	
 	private synchronized void setupWoTListener(Map<String, String> identity)
@@ -121,6 +120,23 @@ public class ChannelManager extends Thread implements ClientGetCallback{
 	public String getChannel()
 	{
 		return this.channel;
+	}
+	
+	
+	public void addIdentity(HashMap<String, String> identity)
+	{
+		channelIdentities.add(identity);
+	}
+	
+	public void removeIdentity(HashMap<String, String> identity)
+	{
+		channelIdentities.remove(identity);
+	}
+	
+	
+	public boolean inChannel(Map<String, String> identity)
+	{
+		return channelIdentities.contains(identity);
 	}
 	
 	
