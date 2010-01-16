@@ -91,11 +91,16 @@ public class Frirc implements FredPlugin, FredPluginHTTP, FredPluginThreadless, 
 	
 	public static String requestURItoID(String requestURI)
 	{
+		System.out.println("URI = "+requestURI.toString());
+		
 		String id = requestURI.split("/")[0]; //remove everything after the first slash
 		if (id.split("@").length > 1)
 		{
 			id = id.split("@")[1]; //remove keytype (SSK / USK)
 		}
+		
+		System.out.println("ID = " + id);
+		
 		return id;
 	}
 
@@ -118,7 +123,6 @@ public class Frirc implements FredPlugin, FredPluginHTTP, FredPluginThreadless, 
 		return Integer.parseInt( right.split("-")[-2] );
 	}
 
-	
 	/**
 	 * Extract the channelname from a full request URI (a channel feed with an index etc etc)
 	 * @param requestURI
@@ -135,6 +139,24 @@ public class Frirc implements FredPlugin, FredPluginHTTP, FredPluginThreadless, 
 		try {
 			FreenetURI request =  new FreenetURI("SSK@" + id + "/" + Frirc.NAMESPACE + "-" + cleanChannel(channel) + "-" + Frirc.currentIndex() + "-0/feed");
 			return request;
+		} catch (MalformedURLException e) {
+			e.printStackTrace();
+		}
+		return null;
+	}
+	
+	/**
+	 * Rewrite an existing request URI to a insert URI
+	 * @param requestURI
+	 * @param insertID
+	 * @return
+	 */
+	
+	public static FreenetURI requestURIToInsertURI(FreenetURI requestURI, String insertID)
+	{
+		try {
+			FreenetURI insertURI =  new FreenetURI("SSK@" + insertID + "/" + Frirc.NAMESPACE + "-" + cleanChannel(requestURItoChannel(requestURI)) + "-" + requestURIToWaypoint(requestURI) + "-"+requestURIToIndex(requestURI)+"/feed");
+			return insertURI;
 		} catch (MalformedURLException e) {
 			e.printStackTrace();
 		}

@@ -66,7 +66,7 @@ public class IRCServer extends Thread {
 	 * Send a message to locally clients
 	 */
 	
-	public void sendLocalMessage(Message message, Map<String, String> identity)
+	public void sendLocalMessage(IRCMessage message, Map<String, String> identity)
 	{
 		locals.get(identity).sendMessage(message);
 	}
@@ -111,7 +111,7 @@ public class IRCServer extends Thread {
 	}
 	
 	
-	public void sendAllLocalClientsInChannel(ChannelManager manager, Message message)
+	public void sendAllLocalClientsInChannel(ChannelManager manager, IRCMessage message)
 	{
 		for(HashMap<String, String> identityItem : locals.keySet())
 		{
@@ -129,7 +129,7 @@ public class IRCServer extends Thread {
 	 * @param message
 	 */
 	
-	public synchronized void message(LocalClient source, Message message)
+	public synchronized void message(LocalClient source, IRCMessage message)
 	{
 		/**
 		 * NICK
@@ -149,15 +149,15 @@ public class IRCServer extends Thread {
 				//confirm the nickchange to all local clients
 				for(LocalClient local : locals.values())
 				{
-					local.sendMessage(Message.createNickChangeMessage(old_identity, new_identity));
+					local.sendMessage(IRCMessage.createNickChangeMessage(old_identity, new_identity));
 				}
 			}
 			
 			//tell client if nick is not a known a WoT identity that we know the user has
 			if (!identityManager.getOwnIdentities().contains(new_identity))
 			{
-				source.sendMessage(Message.createServerNoticeMessage(message.getNick(), "Could not associate that nick with a WoT identity. Reload the plugin if you just added it or check whether it is actually correct. Joining channels will NOT work!"));
-				source.sendMessage(new Message("QUIT"));
+				source.sendMessage(IRCMessage.createServerNoticeMessage(message.getNick(), "Could not associate that nick with a WoT identity. Reload the plugin if you just added it or check whether it is actually correct. Joining channels will NOT work!"));
+				source.sendMessage(new IRCMessage("QUIT"));
 			}
 		}
 
@@ -168,7 +168,7 @@ public class IRCServer extends Thread {
 		 */
 		else if (message.getType().equals("USER") && !message.getValue().equals(""))
 		{
-			for(Message loginMessage : Message.createGenericServerLoginMessages(getIdentityByConnection(source)))
+			for(IRCMessage loginMessage : IRCMessage.createGenericServerLoginMessages(getIdentityByConnection(source)))
 			{
 				source.sendMessage(loginMessage);
 			}
@@ -180,7 +180,7 @@ public class IRCServer extends Thread {
 		 */
 		else if (message.getType().equals("QUIT"))
 		{
-			source.sendMessage(new Message("QUIT"));
+			source.sendMessage(new IRCMessage("QUIT"));
 			try {
 				source.getSocket().close();
 			} catch (IOException e) {
@@ -194,7 +194,7 @@ public class IRCServer extends Thread {
 		
 		else if (message.getType().equals("MODE"))
 		{
-			source.sendMessage(Message.createServerNoticeMessage(message.getNick(), "Modes not supported at this time."));
+			source.sendMessage(IRCMessage.createServerNoticeMessage(message.getNick(), "Modes not supported at this time."));
 		}
 
 		
@@ -212,11 +212,11 @@ public class IRCServer extends Thread {
 			manager.addIdentity(identity);
 			
 			//inform all localClients in the same channel that the user has joined
-			sendAllLocalClientsInChannel(manager, Message.createJOINMessage(identity, channel)); 
+			sendAllLocalClientsInChannel(manager, IRCMessage.createJOINMessage(identity, channel)); 
 			
 			//inform the joining client about who is in the channel
-			source.sendMessage(Message.createChannelModeMessage(channel));
-			for(Message messageItem : Message.createChannelJoinNickList(identity, channel, manager.getIdentities()))
+			source.sendMessage(IRCMessage.createChannelModeMessage(channel));
+			for(IRCMessage messageItem : IRCMessage.createChannelJoinNickList(identity, channel, manager.getIdentities()))
 			{
 				source.sendMessage(messageItem);
 			}
@@ -228,7 +228,7 @@ public class IRCServer extends Thread {
 		
 		else if (message.getType().equals("PING"))
 		{
-			source.sendMessage(new Message("PONG " + message.getValue()));
+			source.sendMessage(new IRCMessage("PONG " + message.getValue()));
 		}
 
 		/**
@@ -241,7 +241,7 @@ public class IRCServer extends Thread {
 			HashMap<String, String> identity = (HashMap<String, String>) getIdentityByConnection(source);
 			
 			//inform all localClients in the same channel that the user has left
-			sendAllLocalClientsInChannel(manager, Message.createPartMessage(identity, message.getChannel()));
+			sendAllLocalClientsInChannel(manager, IRCMessage.createPartMessage(identity, message.getChannel()));
 			manager.removeIdentity(identity);
 		}
 		
@@ -320,35 +320,30 @@ public class IRCServer extends Thread {
 			while(true) {
 				// Blocks until a connection occurs:
 				Socket socket = serverSocket.accept();
-				try {
 					new LocalClient(socket, this);  // Handle an incoming Client.
-				} catch(IOException e) {
-					// If it fails, close the socket,
-					// otherwise the thread will close it:
-					socket.close();
-					serverSocket.close();
-					
-					System.out.println("Closing IRC server...");
-					locals.clear();
-					channels.clear();
-					
-					
-					return;
-				} catch (TransformerConfigurationException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				} catch (ParserConfigurationException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				} catch (TransformerFactoryConfigurationError e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				}
 			}
 		} catch (IOException e1) {
-			// TODO Auto-generated catch block
-			e1.printStackTrace();
+			// If it fails, close the socket,
+			// otherwise the thread will close it:
+			try {
+				serverSocket.close();
+			} catch (IOException e) {
+			}
+			
+			System.out.println("Closing IRC server...");
+			locals.clear();
+			channels.clear();
+			return;
 		}
+		catch (TransformerConfigurationException e) {
+			e.printStackTrace();
+		} catch (ParserConfigurationException e) {
+			e.printStackTrace();
+		} catch (TransformerFactoryConfigurationError e) {
+			e.printStackTrace();
+		}
+
+	
 	}
 
 	public void terminate()
