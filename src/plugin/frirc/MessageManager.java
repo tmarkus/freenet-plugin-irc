@@ -88,19 +88,21 @@ public class MessageManager implements ClientGetCallback, RequestClient, ClientP
 	
 	/**
 	 * Insert a new message
-	 * @param result
+	 * @param message
 	 */
 
-	private  synchronized void insertNewMessage(HashMap<String, String> identity, StringWriter result)
+	private void insertNewMessage(HashMap<String, String> identity, StringWriter message)
 	{
 		try {
-			FreenetURI insertURI = new FreenetURI(identityLastDNF.get(IdentityManager.getIdentityInMap(identity, identityLastDNF.keySet())));
-			updateDNF(identity, Frirc.getNextIndexURI(insertURI));
+			FreenetURI requestURI = new FreenetURI(identityLastDNF.get(IdentityManager.getIdentityInMap(identity, identityLastDNF.keySet())));
+			updateDNF(identity, Frirc.getNextIndexURI(requestURI));
 			
-			System.out.println("Inserting new message at: " + insertURI);
+		    HashMap<String, String> ownIdentity = IdentityManager.getIdentityInMap(identity, new HashSet<HashMap<String, String>>(im.getOwnIdentities()));
+			System.out.println("Inserting new message at: " + Frirc.requestURIToInsertURI(requestURI, ownIdentity.get("insertID")));
+			FreenetURI insertURI = Frirc.requestURIToInsertURI(requestURI, ownIdentity.get("insertID"));
 			
 			//insert content at next index
-			InsertBlock insertBlock = new InsertBlock(new SimpleReadOnlyArrayBucket(result.toString().getBytes()), null, insertURI);
+			InsertBlock insertBlock = new InsertBlock(new SimpleReadOnlyArrayBucket(message.toString().getBytes()), null, insertURI);
 			hl.insert(insertBlock, false, "feed", false, hl.getInsertContext(true), this);
 
 		} catch (MalformedURLException e) {
@@ -144,18 +146,26 @@ public class MessageManager implements ClientGetCallback, RequestClient, ClientP
 			MessageCreator mc = new MessageCreator();
 			insertNewMessage(identity, mc.createChannelPing(identity));
 			
+			/*
 			try {
 				pendingRequests.add(hl.fetch(cg.getURI(), 20000, this, this, ULPRFC));
 			} catch (FetchException e) {
 				e.printStackTrace();
 			}
+		
+			*/
 		}
 	}
 
+
+	/**
+	 * store latest DNF for identity
+	 * @param identity
+	 * @param uri
+	 */
 	
-	private void updateDNF(HashMap<String, String> identity, FreenetURI uri)
+	private synchronized void updateDNF(HashMap<String, String> identity, FreenetURI uri)
 	{
-		//store latest DNF for identity
 		if (IdentityManager.identityInMap(identity, identityLastDNF.keySet()))
 		{
 			identityLastDNF.put(IdentityManager.getIdentityInMap(identity, identityLastDNF.keySet()), uri.toString());
@@ -206,7 +216,7 @@ public class MessageManager implements ClientGetCallback, RequestClient, ClientP
 
 	@Override
 	public boolean persistent() {
-		return false;
+		return true;
 	}
 
 	@Override
@@ -215,6 +225,11 @@ public class MessageManager implements ClientGetCallback, RequestClient, ClientP
 
 	@Override
 	public void onFailure(InsertException arg0, BaseClientPutter arg1, ObjectContainer arg2) {
+
+		System.out.println("Inserting data into freenet has FAILED!");
+		System.out.println(arg0.getMessage());
+		arg0.printStackTrace();
+	
 	}
 
 	@Override
@@ -227,5 +242,8 @@ public class MessageManager implements ClientGetCallback, RequestClient, ClientP
 
 	@Override
 	public void onSuccess(BaseClientPutter arg0, ObjectContainer arg1) {
+	
+		System.out.println("Inserting data into freenet has succeeded!");
+	
 	}
 }

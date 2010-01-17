@@ -41,6 +41,8 @@ public class MessageCreator extends MessageBase{
 		messageElement.setTextContent("ping pong!");
 		rootElement.appendChild(messageElement);
 
+		System.out.println("Created channelping message");
+		
 		return getXMLString(xmlDoc);
 	}
 

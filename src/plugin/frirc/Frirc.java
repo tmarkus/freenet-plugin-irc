@@ -42,8 +42,6 @@ public class Frirc implements FredPlugin, FredPluginHTTP, FredPluginThreadless, 
 	
 	@Override
 	public void runPlugin(PluginRespirator pr) {
-		// TODO Auto-generated method stub
-		
 		
 		try {
 			
@@ -113,14 +111,14 @@ public class Frirc implements FredPlugin, FredPluginHTTP, FredPluginThreadless, 
 	public static int requestURIToIndex(FreenetURI requestURI)
 	{
 		String right = requestURI.toString().split("/")[1];
-		return Integer.parseInt( right.split("-")[-1] );
+		return Integer.parseInt( right.split("-")[3] );
 	}
 	
 
 	public static int requestURIToWaypoint(FreenetURI requestURI)
 	{
 		String right = requestURI.toString().split("/")[1];
-		return Integer.parseInt( right.split("-")[-2] );
+		return Integer.parseInt( right.split("-")[2] );
 	}
 
 	/**
@@ -155,7 +153,7 @@ public class Frirc implements FredPlugin, FredPluginHTTP, FredPluginThreadless, 
 	public static FreenetURI requestURIToInsertURI(FreenetURI requestURI, String insertID)
 	{
 		try {
-			FreenetURI insertURI =  new FreenetURI("SSK@" + insertID + "/" + Frirc.NAMESPACE + "-" + cleanChannel(requestURItoChannel(requestURI)) + "-" + requestURIToWaypoint(requestURI) + "-"+requestURIToIndex(requestURI)+"/feed");
+			FreenetURI insertURI =  new FreenetURI("SSK@" + insertID + "/" + Frirc.NAMESPACE + "-" + cleanChannel(requestURItoChannel(requestURI)) + "-" + requestURIToWaypoint(requestURI) + "-"+requestURIToIndex(requestURI));
 			return insertURI;
 		} catch (MalformedURLException e) {
 			e.printStackTrace();
