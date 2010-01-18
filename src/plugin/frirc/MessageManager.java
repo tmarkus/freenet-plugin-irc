@@ -142,18 +142,16 @@ public class MessageManager implements ClientGetCallback, RequestClient, ClientP
 			System.out.println("Calibrated: " + identity.get("nick"));
 			isCalibrated.put(IdentityManager.getIdentityInMap(identity, isCalibrated.keySet()), true);
 			
-			//send channelping
-			MessageCreator mc = new MessageCreator();
-			insertNewMessage(identity, mc.createChannelPing(identity));
-			
-			/*
-			try {
-				pendingRequests.add(hl.fetch(cg.getURI(), 20000, this, this, ULPRFC));
-			} catch (FetchException e) {
-				e.printStackTrace();
+			//send channelping if the identity that we're calibrating is connected locally
+			if (IdentityManager.identityInMap(identity, cm.getServer().getLocals())  )
+			{
+				MessageCreator mc = new MessageCreator();
+				insertNewMessage(identity, mc.createChannelPing(identity));
 			}
-		
-			*/
+			else //we've calibrated an identity other than our own, do something with it?
+			{
+				System.out.println("Hello, I've calibrated another user");
+			}
 		}
 	}
 
@@ -197,7 +195,7 @@ public class MessageManager implements ClientGetCallback, RequestClient, ClientP
 
 		if (isCalibrated.get(IdentityManager.getIdentityInMap(identity, isCalibrated.keySet())) == true)
 		{
-			System.out.println("Received uri thingy");
+			System.out.println("Received uri thingy and will proceed with processing the message");
 			//really process the message
 		}
 		else //not calibrated yet, so increase the current index and try again
@@ -245,5 +243,13 @@ public class MessageManager implements ClientGetCallback, RequestClient, ClientP
 	
 		System.out.println("Inserting data into freenet has succeeded!");
 	
+	}
+
+	public void setupListeners() {
+		//setup listeners and try to calibrate them
+		for(HashMap<String, String> identity : im.getOwnIdentities()) //FIXME: change to request only rank1 identities, this is a hack for testing!
+		{
+			calibrate(identity);
+		}
 	}
 }

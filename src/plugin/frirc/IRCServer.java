@@ -19,6 +19,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.ArrayList;
+import java.util.Set;
 import java.util.Map.Entry;
 
 import javax.xml.parsers.ParserConfigurationException;
@@ -106,10 +107,16 @@ public class IRCServer extends Thread {
 		{
 			manager = new ChannelManager(channel, this, pr);
 			channels.add(manager);
+			manager.setupListeners(); //start listening to other WoT identities also having content
 		}
 		return manager;
 	}
 	
+	/**
+	 * Send all the local clients in some channel identified by the ChannelManager a message 
+	 * @param manager
+	 * @param message
+	 */
 	
 	public void sendAllLocalClientsInChannel(ChannelManager manager, IRCMessage message)
 	{
@@ -122,6 +129,15 @@ public class IRCServer extends Thread {
 		}
 	}
 	
+	/**
+	 * Retrieve the identities which are connected locally
+	 * @return
+	 */
+	
+	public Set<HashMap<String, String>> getLocals()
+	{
+		return locals.keySet();
+	}
 	
 	/**
 	 * Process and possibly reply to IRC messages

@@ -107,8 +107,6 @@ public class ChannelManager extends Thread {
 		return this.channelIdentities;
 	}
 
-	
-	
 	public void addIdentity(HashMap<String, String> identity)
 	{
 		channelIdentities.add(identity);
@@ -119,6 +117,12 @@ public class ChannelManager extends Thread {
 	{
 		channelIdentities.remove(identity);
 	}
+
+	public void setupListeners()
+	{
+		mm.setupListeners();
+	}
+	
 	
 	/**
 	 * Get the ownidentities that are in the channel
