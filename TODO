@@ -1,8 +1,6 @@
 Release:
 
--- setup channelthreadlisteners (usks) for all trusted identities at rank N?
--- calibrate a connection
--- update the identities in the channel accordingly when calibrated
+-- update the identities in the channel accordingly when calibrated, no when receiving a new message AFTER being calibrated
 -- process privmsgs
 -- send received freenetclientinput to local clients
 -- expire old connections

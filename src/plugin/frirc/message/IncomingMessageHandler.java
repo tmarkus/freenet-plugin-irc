@@ -1,5 +1,6 @@
 package plugin.frirc.message;
 
+import java.io.StringWriter;
 import java.util.HashMap;
 
 import plugin.frirc.ChannelManager;
@@ -24,7 +25,7 @@ public class IncomingMessageHandler extends MessageBase{
 	{
 			if (message.getType().equals("PRIVMSG"))
 			{
-				if (cm.getOwnIdentities().contains(identity)) //message coming from some freenet client?
+				if (!cm.getOwnIdentities().contains(identity)) //message coming from some freenet client?
 				{
 					//check if the nickname is in the channel already
 					if (!cm.getChannelIdentities().contains(identity)) // not? send JOIN message
@@ -39,10 +40,10 @@ public class IncomingMessageHandler extends MessageBase{
 				else //message coming from our own local client
 				{
 					//insert message into freenet
+					MessageCreator mc = new MessageCreator();
+					StringWriter messageString = mc.createPrivMessage(message);
+					cm.getMessageManager().insertNewMessage(identity, messageString);
 				}
-			
 			}
 	}
-
-	
 }

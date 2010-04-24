@@ -11,6 +11,7 @@ import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 
 import plugin.frirc.Frirc;
+import plugin.frirc.IRCMessage;
 
 public class MessageCreator extends MessageBase{
 	
@@ -26,14 +27,14 @@ public class MessageCreator extends MessageBase{
 	public synchronized StringWriter createChannelPing(HashMap<String, String> identity)
 	{
 		Document xmlDoc;
-		synchronized(mDocumentBuilder) { // TODO: Figure out whether the DocumentBuilder is maybe synchronized anyway 
+		synchronized(mDocumentBuilder) { 
 			xmlDoc = mDOM.createDocument(null, Frirc.NAMESPACE, null);
 		}
 
 		Element rootElement = xmlDoc.getDocumentElement();
 
 		/* Create the identity Element */
-		Element messageElement = xmlDoc.createElement("Message");
+		Element messageElement = xmlDoc.createElement("message");
 		//addRandomIdentities(xmlDoc, rootElement);
 		
 		messageElement.setAttribute("type", "channelping");
@@ -63,9 +64,8 @@ public class MessageCreator extends MessageBase{
 		return result;
 	}
 
-	/*
 	
-	private synchronized void pushPrivMessage(Message message)
+	public synchronized StringWriter createPrivMessage(IRCMessage message)
 	{
 		Document xmlDoc;
 		synchronized(mDocumentBuilder) { // TODO: Figure out whether the DocumentBuilder is maybe synchronized anyway 
@@ -75,17 +75,16 @@ public class MessageCreator extends MessageBase{
 		Element rootElement = xmlDoc.getDocumentElement();
 
 		//Create the identity Element
-		Element messageElement = xmlDoc.createElement("Message");
+		Element messageElement = xmlDoc.createElement("message");
 		messageElement.setAttribute("type", "privmsg");
 		messageElement.setAttribute("timestamp", Long.toString(System.currentTimeMillis()));
-		addRandomIdentities(xmlDoc, rootElement);
+		//addRandomIdentities(xmlDoc, rootElement);
 		
 		messageElement.setTextContent(message.getValue());
 		rootElement.appendChild(messageElement);
 
-		insertNewMessage(getXMLString(xmlDoc));
+		return getXMLString(xmlDoc);
 	}
 
-	*/
 	
 }

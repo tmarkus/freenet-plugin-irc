@@ -25,6 +25,8 @@ import org.w3c.dom.DOMImplementation;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 
+import plugin.frirc.message.MessageCreator;
+
 import com.db4o.ObjectContainer;
 
 import freenet.client.FetchContext;
@@ -57,7 +59,15 @@ public class ChannelManager extends Thread {
 	
 	private MessageManager mm;
 	
-	public ChannelManager(String channel, IRCServer server, PluginRespirator pr)
+	/**
+	 * 
+	 * @param channel
+	 * @param server
+	 * @param pr
+	 * @param identity - the local identity that initially joined the channel, we should init WoT with this identity
+	 */
+	
+	public ChannelManager(String channel, IRCServer server, PluginRespirator pr, Map<String, String> identity)
 	{
 		//schedule all the requests from this application with a high priority class so they should finish sooner
 		hl = pr.getNode().clientCore.makeClient(RequestStarter.MAXIMUM_PRIORITY_CLASS);
@@ -67,8 +77,18 @@ public class ChannelManager extends Thread {
 		this.server = server;
 		this.pr = pr;
 		
-		this.identityManager = new IdentityManager(pr, null);
+		this.identityManager = new IdentityManager(pr, identity);
 		this.mm = new MessageManager(this, this.identityManager, pr, hl, low_priority_hl);
+	}
+	
+	/**
+	 * Retrieve the message manager belonging to this channel
+	 * @return
+	 */
+	
+	public MessageManager getMessageManager()
+	{
+		return mm;
 	}
 	
 	/**
@@ -123,17 +143,16 @@ public class ChannelManager extends Thread {
 		mm.setupListeners();
 	}
 	
-	
 	/**
 	 * Get the ownidentities that are in the channel
 	 * @return
 	 */
 	
-	public List<HashMap<String, String>> getOwnIdentityChannelMembers()
+	public List<Map<String, String>> getOwnIdentityChannelMembers()
 	{
-		ArrayList<HashMap<String, String>> members = new ArrayList<HashMap<String, String>>();
+		ArrayList<Map<String, String>> members = new ArrayList<Map<String, String>>();
 		
-		for(HashMap<String, String> member : identityManager.getOwnIdentities())
+		for(Map<String, String> member : identityManager.getOwnIdentities())
 		{
 			if (channelIdentities.contains(member)) members.add(member);
 		}
@@ -165,9 +184,8 @@ public class ChannelManager extends Thread {
 					*/
 				}
 				
-				Thread.sleep(100000);
+				Thread.sleep(100);
 			} catch (InterruptedException e) {
-				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
 		}

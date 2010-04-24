@@ -174,7 +174,7 @@ public class Frirc implements FredPlugin, FredPluginHTTP, FredPluginThreadless, 
 		int index = requestURIToIndex(uri);
 		
 		try {
-			return  new FreenetURI("SSK@" + id + "/" + Frirc.NAMESPACE + "-" + cleanChannel(channel) + "-" + waypoint + "-" + index+1 + "/feed");
+			return  new FreenetURI("SSK@" + id + "/" + Frirc.NAMESPACE + "-" + cleanChannel(channel) + "-" + waypoint + "-" + (index+1) + "/feed");
 		} catch (MalformedURLException e) {
 			e.printStackTrace();
 			return null;

@@ -273,10 +273,10 @@ public class IRCMessage {
 	 * @return a single identity that matches the nickname of the message
 	 */
 	
-	public HashMap<String, String> getIdentity(PluginRespirator pr, Map<String, String> ownIdentity)
+	public Map<String, String> getIdentity(PluginRespirator pr, Map<String, String> ownIdentity)
 	{
 		IdentityManager manager = new IdentityManager(pr, ownIdentity);
-		for(HashMap<String, String> identity : manager.getAllIdentities())
+		for(Map<String, String> identity : manager.getAllIdentities())
 		{
 			if (identity.get("nick").equals(this.nick)) return identity;
 		}
@@ -292,15 +292,21 @@ public class IRCMessage {
 	 * @param channel
 	 * @return
 	 */
-	public static IRCMessage createJOINMessage(HashMap<String,String> identity, String channel)
+	public static IRCMessage createJOINMessage(Map<String,String> identity, String channel)
 	{
 		return new IRCMessage(":" + identity.get("nick")+"!"+identity.get("nick") + "@freenet" + " JOIN " + channel);
 	}
 	
-	public static IRCMessage createChannelMessage(HashMap<String, String> identity, String channel, IRCMessage message)
+	public static IRCMessage createChannelMessage(Map<String, String> identity, String channel, IRCMessage message)
 	{
 		return new IRCMessage(":" + identity.get("nick") + "@freenet PRIVMSG " + channel + " :" + message.getValue());
 	}
+	
+	public static IRCMessage createChannelMessage(Map<String, String> identity, String channel, String messageText)
+	{
+		return new IRCMessage(":" + identity.get("nick") + "@freenet PRIVMSG " + channel + " :" + messageText);
+	}
+
 	
 	public static IRCMessage createNickChangeMessage(Map<String, String> old_identity, Map<String, String> new_identity)
 	{

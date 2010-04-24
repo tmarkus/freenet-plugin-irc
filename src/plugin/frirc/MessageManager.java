@@ -6,6 +6,8 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 
+import plugin.frirc.message.IncomingMessageHandler;
+import plugin.frirc.message.IncomingXMLMessageParser;
 import plugin.frirc.message.MessageCreator;
 
 import com.db4o.ObjectContainer;
@@ -41,8 +43,8 @@ public class MessageManager implements ClientGetCallback, RequestClient, ClientP
 	private FetchContext ULPRFC;
 	
 	private HashSet<ClientGetter> pendingRequests = new HashSet<ClientGetter>();  			//manage all outstanding connections
-	private Map<HashMap<String, String>, Boolean> isCalibrated = new HashMap<HashMap<String, String>, Boolean>();		//store whether an identity is calibrated yet or not
-	private HashMap<HashMap<String, String>, String> identityLastDNF = new HashMap<HashMap<String, String>, String>();		//store the last url that could not be retrieved for the identity
+	private Map<Map<String, String>, Boolean> isCalibrated = new HashMap<Map<String, String>, Boolean>();		//store whether an identity is calibrated yet or not
+	private Map<Map<String, String>, String> identityLastDNF = new HashMap<Map<String, String>, String>();		//store the last url that could not be retrieved for the identity
 	
 	private HighLevelSimpleClient hl;
 	private HighLevelSimpleClient low_priority_hl;
@@ -72,7 +74,7 @@ public class MessageManager implements ClientGetCallback, RequestClient, ClientP
 	 * @param identity
 	 */
 	
-	public void calibrate(HashMap<String, String> identity)
+	public void calibrate(Map<String, String> identity)
 	{
 			isCalibrated.put(identity, false);
 			
@@ -91,13 +93,13 @@ public class MessageManager implements ClientGetCallback, RequestClient, ClientP
 	 * @param message
 	 */
 
-	private void insertNewMessage(HashMap<String, String> identity, StringWriter message)
+	public void insertNewMessage(HashMap<String, String> identity, StringWriter message)
 	{
 		try {
 			FreenetURI requestURI = new FreenetURI(identityLastDNF.get(IdentityManager.getIdentityInMap(identity, identityLastDNF.keySet())));
 			updateDNF(identity, Frirc.getNextIndexURI(requestURI));
 			
-		    HashMap<String, String> ownIdentity = IdentityManager.getIdentityInMap(identity, new HashSet<HashMap<String, String>>(im.getOwnIdentities()));
+		    Map<String, String> ownIdentity = IdentityManager.getIdentityInMap(identity, new HashSet<Map<String, String>>(im.getOwnIdentities()));
 			System.out.println("Inserting new message at: " + Frirc.requestURIToInsertURI(requestURI, ownIdentity.get("insertID")));
 			FreenetURI insertURI = Frirc.requestURIToInsertURI(requestURI, ownIdentity.get("insertID"));
 			
@@ -148,9 +150,15 @@ public class MessageManager implements ClientGetCallback, RequestClient, ClientP
 				MessageCreator mc = new MessageCreator();
 				insertNewMessage(identity, mc.createChannelPing(identity));
 			}
-			else //we've calibrated an identity other than our own, do something with it?
+			else //TODO: we've calibrated an identity other than our own, do something with it?
 			{
-				System.out.println("Hello, I've calibrated another user");
+				System.out.println("Hello, I've calibrated another user, now watching for future messages");
+				
+				try {
+					pendingRequests.add(hl.fetch(cg.getURI() ,20000, this, this, ULPRFC));
+				} catch (FetchException e) {
+					e.printStackTrace();
+				}
 			}
 		}
 	}
@@ -162,7 +170,7 @@ public class MessageManager implements ClientGetCallback, RequestClient, ClientP
 	 * @param uri
 	 */
 	
-	private synchronized void updateDNF(HashMap<String, String> identity, FreenetURI uri)
+	private synchronized void updateDNF(Map<String, String> identity, FreenetURI uri)
 	{
 		if (IdentityManager.identityInMap(identity, identityLastDNF.keySet()))
 		{
@@ -177,6 +185,8 @@ public class MessageManager implements ClientGetCallback, RequestClient, ClientP
 	@Override
 	public synchronized void onSuccess(FetchResult fr, ClientGetter cg, ObjectContainer oc) {
 		 
+		System.out.println("Fetching a key succeeded!");
+		
 		String id = Frirc.requestURItoID(cg.getURI());
 
 		//lookup identity for URL and setup calibration
@@ -196,7 +206,34 @@ public class MessageManager implements ClientGetCallback, RequestClient, ClientP
 		if (isCalibrated.get(IdentityManager.getIdentityInMap(identity, isCalibrated.keySet())) == true)
 		{
 			System.out.println("Received uri thingy and will proceed with processing the message");
+			
+			try
+			{
+			
+			//convert XML to an IRCMessage
+			IncomingXMLMessageParser parser = new IncomingXMLMessageParser(im);
+
 			//really process the message
+			IRCMessage message = parser.parse(fr, cg.getURI());
+			IncomingMessageHandler incomingMessageHandler = new IncomingMessageHandler(cm);
+
+			//send the locally connected clients the contents of the message (assuming it is a message, handle channelpings, differently)
+			incomingMessageHandler.processMessage(message, identity);
+			}
+			catch(Exception e)
+			{
+				e.printStackTrace();
+			}
+			
+			
+			//Set a ULPR for the next message
+			try {
+				System.out.println("Watching next key: " + Frirc.getNextIndexURI(cg.getURI()));
+				pendingRequests.add(hl.fetch(Frirc.getNextIndexURI(cg.getURI()),20000, this, this, ULPRFC));
+			} catch (FetchException e) {
+				e.printStackTrace();
+			}
+			
 		}
 		else //not calibrated yet, so increase the current index and try again
 		{
@@ -247,9 +284,19 @@ public class MessageManager implements ClientGetCallback, RequestClient, ClientP
 
 	public void setupListeners() {
 		//setup listeners and try to calibrate them
-		for(HashMap<String, String> identity : im.getOwnIdentities()) //FIXME: change to request only rank1 identities, this is a hack for testing!
+		for(Map<String, String> identity : im.getAllIdentities())   // im.getOwnIdentities()) //FIXME: change to request only rank1 identities, this is a hack for testing!
 		{
-			calibrate(identity);
+			boolean listen = true;
+			for(Map<String, String> ownIdentity : im.getOwnIdentities())
+			{
+				if (identity.get("ID").equals(ownIdentity.get("ID"))) listen = false;
+			}
+			
+			if (listen)
+			{
+				System.out.println("Starting to calibrate: " + identity.get("ID"));
+				calibrate(identity);
+			}
 		}
 	}
 }

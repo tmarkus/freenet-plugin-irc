@@ -16,8 +16,8 @@ import freenet.support.api.Bucket;
 
 public class IdentityManager implements FredPluginTalker {
 
-	private ArrayList<HashMap<String, String>> ownIdentities = new ArrayList<HashMap<String, String>>(); //list of my own identities
-	private ArrayList<HashMap<String, String>> identities = new ArrayList<HashMap<String, String>>(); //list of all identities
+	private ArrayList<Map<String, String>> ownIdentities = new ArrayList<Map<String, String>>(); //list of my own identities
+	private ArrayList<Map<String, String>> identities = new ArrayList<Map<String, String>>(); //list of all identities
 	private PluginTalker talker;
 	private PluginRespirator pr;
 	private boolean locked_all = true;
@@ -57,7 +57,7 @@ public class IdentityManager implements FredPluginTalker {
 		if (getOwnNickByID(id) != null) return getOwnNickByID(id);
 		
 		//check all identities
-		for(HashMap<String,String> identity : identities)
+		for(Map<String,String> identity : identities)
 		{
 			if (identity.get("ID").equals(id)){
 				return identity.get("nick");
@@ -90,7 +90,7 @@ public class IdentityManager implements FredPluginTalker {
 	{
 
 		//check all identities
-		for(HashMap<String,String> identity : ownIdentities)
+		for(Map<String,String> identity : ownIdentities)
 		{
 			System.out.println(identity.get("ID"));
 			
@@ -101,7 +101,7 @@ public class IdentityManager implements FredPluginTalker {
 
 		
 		//check all identities
-		for(HashMap<String,String> identity : identities)
+		for(Map<String,String> identity : identities)
 		{
 			System.out.println(identity.get("ID"));
 			
@@ -118,7 +118,7 @@ public class IdentityManager implements FredPluginTalker {
 	public String getOwnNickByID(String id)
 	{
 		//check own identities
-		for(HashMap<String,String> identity : ownIdentities)
+		for(Map<String,String> identity : ownIdentities)
 		{
 			if (identity.get("ID").equals(id)){
 				return identity.get("nick");
@@ -149,7 +149,7 @@ public class IdentityManager implements FredPluginTalker {
 			sfs.putOverwrite("Context", ""); //empty means selecting all identities no matter the context
 			talker.send(sfs, null);	//send message to WoT plugin
 			
-			System.out.println("requested identities for identity " + identity.get("ID"));
+			System.out.println("requested identities for identity " + identity.get("ID").split(",")[0]);
 		} catch (PluginNotFoundException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -157,12 +157,21 @@ public class IdentityManager implements FredPluginTalker {
 	}
 
 	
-	public ArrayList<HashMap<String, String>> getAllIdentities()
+	public ArrayList<Map<String, String>> getAllIdentities()
 	{
+		while(locked_all)
+		{
+			try {
+				Thread.sleep(100);
+			} catch (InterruptedException e) {
+				e.printStackTrace();
+			}
+		}
+		
 		return this.identities;
 	}
 	
-	public ArrayList<HashMap<String, String>> getOwnIdentities()
+	public ArrayList<Map<String, String>> getOwnIdentities()
 	{
 		return this.ownIdentities;
 	}
@@ -195,7 +204,7 @@ public class IdentityManager implements FredPluginTalker {
 	
 	private void addIdentities(SimpleFieldSet sfs)
 	{
-		System.out.println("Adding identities");
+		System.out.println("Adding all identities");
 		
 		//clear current identities (requests refresh
 		identities.clear();
@@ -210,13 +219,22 @@ public class IdentityManager implements FredPluginTalker {
 				identity.put("nick", sfs.getString("Nickname"+i));
 				identity.put("Value", sfs.getString("Value"+i));
 				
+				System.out.println("Added identity: " + identity.get("nick"));
+				
 				identities.add(identity);
 				i++;
 			}
 		} catch (FSParseException e) { //triggered when we've reached the end of the identity list
-			locked_all = new Boolean(false);
-			System.out.println("Reached end of identity list");
+			locked_all = false;
 		}
+	
+	
+		//FIXME: hack for broken WoT (from the perspective of freenet2)
+		HashMap<String, String> identity = new HashMap<String,String>();
+		identity.put("ID", "67gJMSsyOg0OqifgD-Aebtw8XwKVx~vjVuRbo0WXsI4,4tbrCVGd3fvNTAwUxVZFFzaqoskEp85HgBkwpe~hiD0,AQACAAE");
+		identity.put("nick", "freenet1");
+		identity.put("Value", "100");
+		identities.add(identity);
 	}
 
 	/**
@@ -225,16 +243,16 @@ public class IdentityManager implements FredPluginTalker {
 	 * @return
 	 */
 	
-	public HashMap<String, String> getIdentityByNick(String nick)
+	public Map<String, String> getIdentityByNick(String nick)
 	{
-		for(HashMap<String,String> identity : identities)
+		for(Map<String,String> identity : identities)
 		{
 			if (identity.get("nick").equals(nick)){
 				return identity;
 			}
 		}
 		
-		for(HashMap<String,String> identity : ownIdentities)
+		for(Map<String,String> identity : ownIdentities)
 		{
 			if (identity.get("nick").equals(nick)){
 				return identity;
@@ -274,18 +292,18 @@ public class IdentityManager implements FredPluginTalker {
  
 	}
 
-	public static boolean identityInMap(HashMap<String, String> identity, Set<HashMap<String, String>> identities)
+	public static boolean identityInMap(Map<String, String> identity, Set<Map<String, String>> identities)
 	{
-		for(HashMap<String, String> identityItem : identities)
+		for(Map<String, String> identityItem : identities)
 		{
 			if (identityItem.get("ID").equals(identity.get("ID"))) return true;
 		}
 		return false;
 	}
 
-	public static HashMap<String, String> getIdentityInMap(HashMap<String, String> identity, Set<HashMap<String, String>> identities)
+	public static Map<String, String> getIdentityInMap(Map<String, String> identity, Set<Map<String, String>> identities)
 	{
-		for(HashMap<String, String> identityItem : identities)
+		for(Map<String, String> identityItem : identities)
 		{
 			if (identityItem.get("ID").equals(identity.get("ID"))) return identityItem;
 		}

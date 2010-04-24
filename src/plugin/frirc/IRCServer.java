@@ -12,6 +12,7 @@ package plugin.frirc;
  */
 
 import java.io.IOException;
+import java.io.StringWriter;
 import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
@@ -26,6 +27,9 @@ import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.transform.TransformerConfigurationException;
 import javax.xml.transform.TransformerFactoryConfigurationError;
 
+import plugin.frirc.message.IncomingMessageHandler;
+import plugin.frirc.message.MessageCreator;
+
 import freenet.pluginmanager.PluginRespirator;
 
 public class IRCServer extends Thread {  
@@ -36,7 +40,7 @@ public class IRCServer extends Thread {
 	private IdentityManager identityManager;
 	
 	//local outgoing connections
-	private HashMap<HashMap<String, String>, LocalClient> locals = new HashMap<HashMap<String, String>, LocalClient>();
+	private Map<Map<String, String>, LocalClient> locals = new HashMap<Map<String, String>, LocalClient>();
 	private List<ChannelManager> channels = new ArrayList<ChannelManager>();
 	
 	
@@ -80,7 +84,7 @@ public class IRCServer extends Thread {
 	
 	private Map<String, String> getIdentityByConnection(LocalClient source)
 	{
-		for(Entry<HashMap<String, String>, LocalClient> pair : locals.entrySet())
+		for(Entry<Map<String, String>, LocalClient> pair : locals.entrySet())
 		{
 			if (pair.getValue() == source)
 			{
@@ -96,16 +100,18 @@ public class IRCServer extends Thread {
 	 * @return
 	 */
 	
-	private ChannelManager getChannelManager(String channel)
+	private ChannelManager getChannelManager(String channel, Map<String, String> identity)
 	{
 		ChannelManager manager = null;
 		for(ChannelManager channelManagerItem : channels)
 		{
 			if (channelManagerItem.getChannel().equals(channel)) manager = channelManagerItem;
 		}
-		if (manager == null)
+		if (manager == null) //setup a new channelmanager
 		{
-			manager = new ChannelManager(channel, this, pr);
+			System.out.println("Creating new ChannelManager with identity: " + identity.get("ID"));
+			
+			manager = new ChannelManager(channel, this, pr, identity);
 			channels.add(manager);
 			manager.setupListeners(); //start listening to other WoT identities also having content
 		}
@@ -120,7 +126,7 @@ public class IRCServer extends Thread {
 	
 	public void sendAllLocalClientsInChannel(ChannelManager manager, IRCMessage message)
 	{
-		for(HashMap<String, String> identityItem : locals.keySet())
+		for(Map<String, String> identityItem : locals.keySet())
 		{
 			if (manager.inChannel(identityItem))
 			{
@@ -134,7 +140,7 @@ public class IRCServer extends Thread {
 	 * @return
 	 */
 	
-	public Set<HashMap<String, String>> getLocals()
+	public Set<Map<String, String>> getLocals()
 	{
 		return locals.keySet();
 	}
@@ -156,7 +162,7 @@ public class IRCServer extends Thread {
 		{	
 			//remove old identity map
 			Map<String, String> old_identity = getIdentityByConnection(source);
-			HashMap<String, String> new_identity = identityManager.getIdentityByNick(message.getNick());
+			Map<String, String> new_identity = identityManager.getIdentityByNick(message.getNick());
 			locals.remove(old_identity);
 			locals.put(new_identity, source);
 			
@@ -224,7 +230,8 @@ public class IRCServer extends Thread {
 			String channel = message.getChannel();
 			HashMap<String, String> identity = (HashMap<String, String>) getIdentityByConnection(source);
 			
-			ChannelManager manager = getChannelManager(channel); 
+			
+			ChannelManager manager = getChannelManager(channel, identity); 
 			manager.addIdentity(identity);
 			
 			//inform all localClients in the same channel that the user has joined
@@ -253,17 +260,29 @@ public class IRCServer extends Thread {
 		
 		else if (message.getType().equals("PART"))
 		{
-			ChannelManager manager = getChannelManager(message.getChannel());
 			HashMap<String, String> identity = (HashMap<String, String>) getIdentityByConnection(source);
+			ChannelManager manager = getChannelManager(message.getChannel(), identity);
 			
 			//inform all localClients in the same channel that the user has left
 			sendAllLocalClientsInChannel(manager, IRCMessage.createPartMessage(identity, message.getChannel()));
 			manager.removeIdentity(identity);
 		}
-		
-		
-		
-		
+
+		/**
+		 * Message for channel
+		 */
+
+		else if (message.getType().equals("PRIVMSG")) 
+		{
+			//retrieve the nick associated with the connection
+			String channel = message.getChannel();
+			HashMap<String, String> identity = (HashMap<String, String>) getIdentityByConnection(source);
+
+			ChannelManager cm = getChannelManager(channel, identity);
+			IncomingMessageHandler incoming = new IncomingMessageHandler(cm);
+			incoming.processMessage(message, identity);
+		}
+
 		/*
 		 * WHO
 		 */
@@ -286,47 +305,22 @@ public class IRCServer extends Thread {
 
 		*/
 
-		/**
-		 * Message for channel
-		 */
-
-		/*
-		else if (message.getType().equals("PRIVMSG")) 
-		{
-			String nick = getNickByCon(source);
-
-			//iterate over all the users(connections) and send them the privmsg, except the originating user!
-
-			for(String channelUser: channelUsers.get(message.getChannel()))
-			{
-				if (nickToInput.get(channelUser) != null)
-				{
-					for (FrircConnection out : nickToInput.get(channelUser))
-					{
-						if (	( !source.isLocal() && out.isLocal() && !channelUser.equals(nick)) ||	//deliver locally 
-								( source.isLocal() && !out.isLocal() && channelUser.equals(nick) )		//publish to freenet
-							) 
-						{
-							System.out.println("DEBUG: Message added to some outqueue");
-							outQueue.get(out).add(new Message(":" + nick + "@freenet PRIVMSG " + message.getChannel() + " :" + message.getValue()));
-							
-							break;
-							//TODO: probably some memory leak here...(outQueue never cleaned up)
-						}
-					}
-				}
-			}
-		}
-	
-		*/
+		
 	
 	}
 
 	public void run()
 	{
 		try {
+			try
+			{
 			serverSocket = new ServerSocket(PORT);
-
+			}
+			catch(IOException e)
+			{
+				serverSocket = new ServerSocket(PORT+1);
+			}
+			
 			InetAddress  addrs= InetAddress.getLocalHost();         
 			// Or InetAddress  addrs= InetAddress.getByName("localhost");
 			// Or InetAddress  addrs= InetAddress.getByName("127.0.0.1");  
