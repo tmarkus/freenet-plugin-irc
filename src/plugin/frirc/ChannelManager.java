@@ -1,50 +1,13 @@
 package plugin.frirc;
 
-import java.io.StringWriter;
-import java.net.MalformedURLException;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 
-import javax.xml.XMLConstants;
-import javax.xml.parsers.DocumentBuilder;
-import javax.xml.parsers.DocumentBuilderFactory;
-import javax.xml.parsers.ParserConfigurationException;
-import javax.xml.transform.OutputKeys;
-import javax.xml.transform.Transformer;
-import javax.xml.transform.TransformerConfigurationException;
-import javax.xml.transform.TransformerException;
-import javax.xml.transform.TransformerFactory;
-import javax.xml.transform.TransformerFactoryConfigurationError;
-import javax.xml.transform.dom.DOMSource;
-import javax.xml.transform.stream.StreamResult;
-
-import org.w3c.dom.DOMImplementation;
-import org.w3c.dom.Document;
-import org.w3c.dom.Element;
-
-import plugin.frirc.message.MessageCreator;
-import plugins.WoT.introduction.captcha.kaptcha.jhlabs.math.BlackFunction;
-
-import com.db4o.ObjectContainer;
-
-import freenet.client.FetchContext;
-import freenet.client.FetchException;
-import freenet.client.FetchResult;
 import freenet.client.HighLevelSimpleClient;
-import freenet.client.InsertBlock;
-import freenet.client.InsertException;
-import freenet.client.async.BaseClientPutter;
-import freenet.client.async.ClientGetCallback;
-import freenet.client.async.ClientGetter;
-import freenet.client.async.ClientPutCallback;
-import freenet.keys.FreenetURI;
-import freenet.node.RequestClient;
 import freenet.node.RequestStarter;
 import freenet.pluginmanager.PluginRespirator;
-import freenet.support.SimpleReadOnlyArrayBucket;
 
 public class ChannelManager extends Thread {
 

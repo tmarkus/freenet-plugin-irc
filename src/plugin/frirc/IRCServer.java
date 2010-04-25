@@ -12,7 +12,6 @@ package plugin.frirc;
  */
 
 import java.io.IOException;
-import java.io.StringWriter;
 import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
@@ -28,7 +27,6 @@ import javax.xml.transform.TransformerConfigurationException;
 import javax.xml.transform.TransformerFactoryConfigurationError;
 
 import plugin.frirc.message.IncomingMessageHandler;
-import plugin.frirc.message.MessageCreator;
 
 import freenet.pluginmanager.PluginRespirator;
 

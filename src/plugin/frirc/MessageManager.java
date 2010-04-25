@@ -45,6 +45,9 @@ public class MessageManager implements ClientGetCallback, RequestClient, ClientP
 	private FetchContext ULPRFC;
 	
 	private HashSet<ClientGetter> pendingRequests = new HashSet<ClientGetter>();  			//manage all outstanding connections
+	
+	
+	
 	private Map<Map<String, String>, Boolean> isCalibrated = new HashMap<Map<String, String>, Boolean>();		//store whether an identity is calibrated yet or not
 	private Map<Map<String, String>, String> identityLastDNF = new HashMap<Map<String, String>, String>();		//store the last url that could not be retrieved for the identity
 	
@@ -158,7 +161,7 @@ public class MessageManager implements ClientGetCallback, RequestClient, ClientP
 			//send channelping if the identity that we're calibrating is connected locally
 			if (IdentityManager.identityInMap(identity, cm.getServer().getLocals())  )
 			{
-				MessageCreator mc = new MessageCreator();
+				MessageCreator mc = new MessageCreator(cm);
 				insertNewMessage(identity, mc.createChannelPing(identity));
 			}
 			else
@@ -238,7 +241,7 @@ public class MessageManager implements ClientGetCallback, RequestClient, ClientP
 		}
 		
 
-		if (isCalibrated.get(IdentityManager.getIdentityInMap(identity, isCalibrated.keySet())) == true)
+		if (isCalibrated.get(IdentityManager.getIdentityInMap(identity, isCalibrated.keySet())) == true && im.getOwnNickByID(id) != null) //check that we're really not processing our own messages
 		{
 			try
 			{
@@ -316,7 +319,7 @@ public class MessageManager implements ClientGetCallback, RequestClient, ClientP
 
 	public void setupListeners() {
 		//setup listeners and try to calibrate them
-		for(Map<String, String> identity : im.getAllIdentities())   // im.getOwnIdentities()) //FIXME: change to request only rank1 identities, this is a hack for testing!
+		for(Map<String, String> identity : im.getAllIdentities())
 		{
 			boolean listen = true; //only start listening for identities other than your own (prevents infinite loop)
 			
@@ -334,6 +337,13 @@ public class MessageManager implements ClientGetCallback, RequestClient, ClientP
 	}
 
 	public void terminate() {
+		
+		//cancel all pending requests that we know about
+		for(ClientGetter cg : pendingRequests)
+		{
+			//cg.cancel(cg., pr.getNode().clientCore.clientContext); //TODO: ask how this works!
+		}
+		
 		isCalibrated.clear();
 		blackList.clear();
 		identityLastDNF.clear();

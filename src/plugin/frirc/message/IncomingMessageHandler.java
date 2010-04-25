@@ -1,7 +1,6 @@
 package plugin.frirc.message;
 
 import java.io.StringWriter;
-import java.util.HashMap;
 import java.util.Map;
 
 import plugin.frirc.ChannelManager;
@@ -44,7 +43,7 @@ public class IncomingMessageHandler extends MessageBase{
 				else //message coming from our own local client
 				{
 					//insert message into freenet
-					MessageCreator mc = new MessageCreator();
+					MessageCreator mc = new MessageCreator(cm);
 					StringWriter messageString = mc.createPrivMessage(message);
 					cm.getMessageManager().insertNewMessage(identity, messageString);
 				}
@@ -65,7 +64,7 @@ public class IncomingMessageHandler extends MessageBase{
 				if (im.getOwnNickByID(identity.get("ID")) != null) //one of our own identities?
 				{
 					//insert message into freenet
-					MessageCreator mc = new MessageCreator();
+					MessageCreator mc = new MessageCreator(cm);
 					StringWriter messageString = mc.createPartMessage(message);
 					cm.getMessageManager().insertNewMessage(identity, messageString);
 

@@ -2,10 +2,7 @@ package plugin.frirc.message;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
-import java.util.HashMap;
-import java.util.Map;
 
-import javax.xml.parsers.DocumentBuilder;
 import javax.xml.xpath.XPath;
 import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPathExpression;
@@ -13,8 +10,6 @@ import javax.xml.xpath.XPathExpressionException;
 import javax.xml.xpath.XPathFactory;
 
 import org.w3c.dom.Document;
-import org.w3c.dom.Element;
-import org.w3c.dom.Node;
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
 
@@ -52,7 +47,7 @@ public class IncomingXMLMessageParser extends MessageBase {
 			if (type.equals("privmsg"))
 			{
 				expr = xpath.compile("//message/@timestamp");
-				int timestamp = ((Double) expr.evaluate(doc, XPathConstants.NUMBER)).intValue();
+				//int timestamp = ((Double) expr.evaluate(doc, XPathConstants.NUMBER)).intValue();
 	
 				expr = xpath.compile("//message/text()");
 				String messageText = (String) expr.evaluate(doc, XPathConstants.STRING);

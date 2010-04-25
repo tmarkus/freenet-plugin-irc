@@ -1,12 +1,11 @@
 Release:
 
-- implement log list for outgoing request that are too old (current index -2 or something), cancel those very old request
-- provide simple instructions when visiting the plugin through http
 - add other identity hints
-
+- provide simple instructions when visiting the plugin through http
 
 Next version(s):
 
+- implement log list for outgoing request that are too old (current index -2 or something), cancel those very old request
 - check trust of a hinted identity (calculated trust, not manually assigned)
 - properly use rank for first identity listeners
 - do proper logging instead of writing to stdout

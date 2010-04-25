@@ -9,9 +9,7 @@ import java.net.MalformedURLException;
 
 import javax.xml.transform.TransformerFactoryConfigurationError;
 
-import freenet.client.HighLevelSimpleClient;
 import freenet.keys.FreenetURI;
-import freenet.node.RequestStarter;
 import freenet.pluginmanager.FredPlugin;
 import freenet.pluginmanager.FredPluginHTTP;
 import freenet.pluginmanager.FredPluginTalker;
@@ -33,6 +31,9 @@ public class Frirc implements FredPlugin, FredPluginHTTP, FredPluginThreadless, 
 	public static long TIMEOUT = 5*60  * 1000; //ms
 	
 	private IRCServer IRCServer;
+	
+	public static int MAX_IDENTITY_HINTS = 3;
+	
 	
 	public static long currentIndex()
 	{
@@ -63,21 +64,17 @@ public class Frirc implements FredPlugin, FredPluginHTTP, FredPluginThreadless, 
 
 	@Override
 	public String handleHTTPGet(HTTPRequest arg0) throws PluginHTTPException {
-		// TODO Auto-generated method stub
 		return null;
 	}
 
 	@Override
 	public String handleHTTPPost(HTTPRequest arg0) throws PluginHTTPException {
-		// TODO Auto-generated method stub
 		return null;
 	}
 
 	@Override
 	public void onReply(String arg0, String arg1, SimpleFieldSet arg2,
 			Bucket arg3) {
-		// TODO Auto-generated method stub
-		
 	}
 
 	/**
