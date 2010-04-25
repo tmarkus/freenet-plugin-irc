@@ -137,8 +137,6 @@ public class ChannelManager extends Thread {
 		
 		while(true)
 		{
-			System.out.println("MARK");
-
 			if (index != Frirc.currentIndex())
 			{
 				//setup listeners for all the people in my WoT
