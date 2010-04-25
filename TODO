@@ -1,6 +1,5 @@
 Release:
 
-- setup 2 connections, disconnect 1, reconnect, messages will appear double!!!!, has to do with array of identities not clearing or something, make set ipv list???
 - implement log list for outgoing request that are too old (current index -2 or something), cancel those very old request
 - provide simple instructions when visiting the plugin through http
 - add other identity hints
