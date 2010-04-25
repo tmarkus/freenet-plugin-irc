@@ -1,6 +1,7 @@
 Release:
 
-- provide simple instructions when visiting the plugin through http
+- TESTING!
+
 
 Next version(s):
 
@@ -10,7 +11,6 @@ Next version(s):
 - do proper logging instead of writing to stdout
 - discover other channels (support /list)
 - sample identity hints from all channels instead of the current associated one
-- cancel ULPR's for older timestamps
 - private encrypted channels
 - personal messages?
 - support topics

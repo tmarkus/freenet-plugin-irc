@@ -64,7 +64,12 @@ public class Frirc implements FredPlugin, FredPluginHTTP, FredPluginThreadless, 
 
 	@Override
 	public String handleHTTPGet(HTTPRequest arg0) throws PluginHTTPException {
-		return null;
+		return "<html><header><title>Frirc instructions</title></header><body>" +
+		"<h1>Hi!</h1>" +
+		"You should be able to connect to a simple IRC-like server on localhost:6667 .<br />" +
+		"Set your IRC username and nick to the nickname of one of your personal WoT-identities or you won't be able to connect. <br />" +
+		"You need a seperate IRC client in order to make use of Frirc!" +
+		"</body></html>";
 	}
 
 	@Override
