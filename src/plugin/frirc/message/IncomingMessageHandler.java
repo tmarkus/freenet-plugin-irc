@@ -49,11 +49,15 @@ public class IncomingMessageHandler extends MessageBase{
 					cm.getMessageManager().insertNewMessage(identity, messageString);
 				}
 			}
+			
+			
 			else if (message.getType().equals("JOIN"))
 			{
 				cm.addIdentity(identity);
 				cm.getServer().sendAllLocalClientsInChannel(cm, message);
 			}
+			
+			
 			else if (message.getType().equals("PART"))
 			{
 				cm.removeIdentity(identity);
