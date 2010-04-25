@@ -219,6 +219,7 @@ public class IRCServer extends Thread {
 			} catch (IOException e) {
 				e.printStackTrace();
 			}
+			terminate();
 		}
 
 		/**
@@ -367,25 +368,14 @@ public class IRCServer extends Thread {
 
 	public void terminate()
 	{
-		if (serverSocket != null)
-		{
-		try {
-			serverSocket.close();
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-		}
-	
 		//do something smart with clearing channels and signalling threads to stop listening etc
-		locals.clear();
-		
 		for(ChannelManager manager : channels)
 		{
 			manager.stop();
 		}
 			
-		channels.clear();	
+		channels.clear();
+		locals.clear();
 	}
 
 	public boolean stopThread()

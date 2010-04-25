@@ -1,6 +1,5 @@
 Release:
 
-- support leaving a channel timeout / explicitly
 - add other identity hints
 - implement log list for outgoing request that are too old (current index -2 or something), cancel those very old request
 - provide simple instructions when visiting the plugin through http
