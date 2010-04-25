@@ -2,6 +2,7 @@ package plugin.frirc.message;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.util.Map;
 
 import javax.xml.xpath.XPath;
 import javax.xml.xpath.XPathConstants;
@@ -20,6 +21,7 @@ import freenet.keys.FreenetURI;
 import plugin.frirc.ChannelManager;
 import plugin.frirc.Frirc;
 import plugin.frirc.IRCMessage;
+import plugin.frirc.IRCServer;
 import plugin.frirc.IdentityManager;
 
 public class IncomingXMLMessageParser extends MessageBase {
@@ -53,10 +55,24 @@ public class IncomingXMLMessageParser extends MessageBase {
 			NodeList identityNodes = (NodeList) expr.evaluate(doc, XPathConstants.NODESET);
 			
 			//setup listeners for all the hinted identities
+			//TODO: this place is pretty weird to include this functionality.... MOVE IT!
 			for (int i = 0; i < identityNodes.getLength(); i++) {
 			    String identityHint = identityNodes.item(i).getTextContent();
 			    cm.getMessageManager().calibrate(im.getIdentityByID(identityHint));
 				System.out.println("I found an identity hint and it is: " + identityNodes.item(i).getTextContent()); 
+			
+				for(Map<String, String> own_identity : cm.getOwnIdentities())
+				{
+					if (own_identity.get("ID").equals(identityHint))
+					{
+						String mode = "+v";
+						String nick = im.getNickByID(Frirc.requestURItoID(uri)); //the nick of the identity that listed us!
+						IRCMessage message = new IRCMessage(":" + IRCServer.SERVERNAME + " MODE " + cm.getChannel() + " " + mode + " " +nick);
+						
+						cm.getServer().sendAllLocalClientsInChannel(cm, message);
+						cm.getServer().addBlacklist(message);
+					}
+				}
 			}
 			
 			if (type.equals("privmsg"))

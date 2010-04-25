@@ -16,6 +16,7 @@ import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.ArrayList;
@@ -32,7 +33,7 @@ import freenet.pluginmanager.PluginRespirator;
 
 public class IRCServer extends Thread {  
 	static final int PORT = 6667; // assign to next available Port.
-	static final String SERVERNAME = "freenetIRCserver";
+	public static final String SERVERNAME = "freenetIRCserver";
 	private PluginRespirator pr;
 	private ServerSocket serverSocket;
 	private IdentityManager identityManager;
@@ -41,6 +42,7 @@ public class IRCServer extends Thread {
 	private Map<Map<String, String>, LocalClient> locals = new HashMap<Map<String, String>, LocalClient>();
 	private List<ChannelManager> channels = new ArrayList<ChannelManager>();
 	
+	private List<String> localClientDistributionBlacklist = new LinkedList<String>();
 	
 	public IRCServer(PluginRespirator pr)
 	{
@@ -129,7 +131,7 @@ public class IRCServer extends Thread {
 		{
 			if (manager.inChannel(identityItem))
 			{
-				locals.get(identityItem).sendMessage(message);
+				if (!localClientDistributionBlacklist.contains(message.toString())) locals.get(identityItem).sendMessage(message);
 			}
 		}
 	}
@@ -379,6 +381,7 @@ public class IRCServer extends Thread {
 			
 		channels.clear();
 		locals.clear();
+		localClientDistributionBlacklist.clear();
 	}
 
 	public void terminate()
@@ -399,6 +402,15 @@ public class IRCServer extends Thread {
 	{
 		if (serverSocket == null || serverSocket.isClosed()) return true;
 		return false;
+	}
+	
+	/**
+	 * Blacklist the sending to localclients of some IRCMessage
+	 */
+	
+	public void addBlacklist(IRCMessage message)
+	{
+		localClientDistributionBlacklist.add(message.toString());
 	}
 	
 }

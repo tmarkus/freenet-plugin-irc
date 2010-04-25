@@ -1,8 +1,8 @@
 Release:
 
 - TESTING!
-- Trigger a usermode update when we see ourselves hinted by another identity (we can then be sure he's monitoring us)
 - Implement WHO usernames listing for a channel, some IRC clients require this
+- Trigger a part after we haven't seen an identity for a long time
 
 
 Next version(s):
