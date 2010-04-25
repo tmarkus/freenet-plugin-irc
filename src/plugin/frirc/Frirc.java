@@ -46,7 +46,6 @@ public class Frirc implements FredPlugin, FredPluginHTTP, FredPluginThreadless, 
 		try {
 			
 			System.out.println("Now starting the IRC server...");
-			
 			 
 			this.IRCServer = new IRCServer(pr);
 			this.IRCServer.start();
@@ -89,7 +88,7 @@ public class Frirc implements FredPlugin, FredPluginHTTP, FredPluginThreadless, 
 	
 	public static String requestURItoID(String requestURI)
 	{
-		System.out.println("URI = "+requestURI.toString());
+		//System.out.println("URI = "+requestURI.toString());
 		
 		String id = requestURI.split("/")[0]; //remove everything after the first slash
 		if (id.split("@").length > 1)
@@ -97,7 +96,7 @@ public class Frirc implements FredPlugin, FredPluginHTTP, FredPluginThreadless, 
 			id = id.split("@")[1]; //remove keytype (SSK / USK)
 		}
 		
-		System.out.println("ID = " + id);
+		//System.out.println("ID = " + id);
 		
 		return id;
 	}

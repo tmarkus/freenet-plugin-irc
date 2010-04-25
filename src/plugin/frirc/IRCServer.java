@@ -214,12 +214,13 @@ public class IRCServer extends Thread {
 		else if (message.getType().equals("QUIT"))
 		{
 			source.sendMessage(new IRCMessage("QUIT"));
+			cleanup();
+
 			try {
 				source.getSocket().close();
 			} catch (IOException e) {
 				e.printStackTrace();
 			}
-			terminate();
 		}
 
 		/**
@@ -350,9 +351,13 @@ public class IRCServer extends Thread {
 				serverSocket.close();
 			} catch (IOException e) {
 			}
+			catch(NullPointerException e)
+			{
+				//nullpointerexception for when the serverSocket is already closed
+			}
 			
-			System.out.println("Closing IRC server...");
-			terminate();
+			System.out.println("Closed the IRC server...");
+			cleanup();
 			return;
 		}
 		catch (TransformerConfigurationException e) {
@@ -366,18 +371,32 @@ public class IRCServer extends Thread {
 	
 	}
 
-	public void terminate()
+	public void cleanup()
 	{
 		//do something smart with clearing channels and signalling threads to stop listening etc
 		for(ChannelManager manager : channels)
 		{
-			manager.stop();
+			manager.terminate();
 		}
 			
 		channels.clear();
 		locals.clear();
 	}
 
+	public void terminate()
+	{
+		cleanup();
+		try {
+			serverSocket.close();
+		} catch (IOException e) {
+		}
+		catch(NullPointerException e)
+		{
+			//nullpointerexception for when the serverSocket is already closed
+		}
+	}
+	
+	
 	public boolean stopThread()
 	{
 		if (serverSocket == null || serverSocket.isClosed()) return true;

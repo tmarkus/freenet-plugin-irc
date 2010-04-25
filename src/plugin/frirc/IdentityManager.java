@@ -92,7 +92,7 @@ public class IdentityManager implements FredPluginTalker {
 		//check all identities
 		for(Map<String,String> identity : ownIdentities)
 		{
-			System.out.println(identity.get("ID"));
+			//System.out.println(identity.get("ID"));
 			
 			if (identity.get("ID").equals(id)){
 				return identity;
@@ -103,7 +103,7 @@ public class IdentityManager implements FredPluginTalker {
 		//check all identities
 		for(Map<String,String> identity : identities)
 		{
-			System.out.println(identity.get("ID"));
+			//System.out.println(identity.get("ID"));
 			
 			if (identity.get("ID").equals(id)){
 				return identity;
@@ -204,7 +204,7 @@ public class IdentityManager implements FredPluginTalker {
 	
 	private void addIdentities(SimpleFieldSet sfs)
 	{
-		System.out.println("Adding all identities");
+		//System.out.println("Adding all identities");
 		
 		//clear current identities (requests refresh
 		identities.clear();
@@ -219,7 +219,7 @@ public class IdentityManager implements FredPluginTalker {
 				identity.put("nick", sfs.getString("Nickname"+i));
 				identity.put("Value", sfs.getString("Value"+i));
 				
-				System.out.println("Added identity: " + identity.get("nick"));
+				//System.out.println("Added identity: " + identity.get("nick"));
 				
 				identities.add(identity);
 				i++;
@@ -278,7 +278,7 @@ public class IdentityManager implements FredPluginTalker {
 	@Override
 	public void onReply(String plugin, String channel, SimpleFieldSet sfs, Bucket arg3) {
 		try {
-			System.out.println("Message received = " + sfs.get("Message"));
+			//System.out.println("Message received = " + sfs.get("Message"));
  
 			if (sfs.getString("Message").equals("OwnIdentities"))
 			{
@@ -290,8 +290,8 @@ public class IdentityManager implements FredPluginTalker {
 			}
 			else
 			{
-				System.out.println("Message received = " + sfs.get("OriginalMessage"));
-				System.out.println("Message received = " + sfs.get("Description"));
+				//System.out.println("Message received = " + sfs.get("OriginalMessage"));
+				//System.out.println("Message received = " + sfs.get("Description"));
 			}
 		} catch (FSParseException e) { //no message field, shouldn't happen
 			e.printStackTrace();

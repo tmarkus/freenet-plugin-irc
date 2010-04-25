@@ -26,6 +26,7 @@ import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 
 import plugin.frirc.message.MessageCreator;
+import plugins.WoT.introduction.captcha.kaptcha.jhlabs.math.BlackFunction;
 
 import com.db4o.ObjectContainer;
 
@@ -189,4 +190,12 @@ public class ChannelManager extends Thread {
 			}
 		}
 	}
+
+
+	public void terminate()
+	{
+		mm.terminate();
+		stop();
+	}
+	
 }

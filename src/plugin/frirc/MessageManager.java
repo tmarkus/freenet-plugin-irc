@@ -104,7 +104,7 @@ public class MessageManager implements ClientGetCallback, RequestClient, ClientP
 	public void insertNewMessage(Map<String, String> identity, StringWriter message)
 	{
 		try {
-			FreenetURI requestURI = new FreenetURI(identityLastDNF.get(IdentityManager.getIdentityInMap(identity, identityLastDNF.keySet())));
+			FreenetURI requestURI = new FreenetURI(getLastDNF(identity));
 			updateDNF(identity, Frirc.getNextIndexURI(requestURI));
 			
 		    Map<String, String> ownIdentity = IdentityManager.getIdentityInMap(identity, new HashSet<Map<String, String>>(im.getOwnIdentities()));
@@ -127,6 +127,9 @@ public class MessageManager implements ClientGetCallback, RequestClient, ClientP
 	@Override
 	public synchronized void onFailure(FetchException fe, ClientGetter cg, ObjectContainer oc) {
 
+		
+		System.out.println("Failed to retrieve key: " + cg.getURI() + " (DNF)");
+		
 		String id = Frirc.requestURItoID(cg.getURI());
 
 		//lookup identity for URL and setup calibration
@@ -190,15 +193,27 @@ public class MessageManager implements ClientGetCallback, RequestClient, ClientP
 		}
 	}
 	
+	private String getLastDNF(Map<String, String> identity)
+	{
+		for(Map<String, String> identityElement : identityLastDNF.keySet())
+		{
+			if (identityElement.get("ID").equals(identity.get("ID"))) return identityLastDNF.get(identityElement);
+		}
+		return null;
+	}
+	
+	
 	@Override
 	public synchronized void onSuccess(FetchResult fr, ClientGetter cg, ObjectContainer oc) {
 		 
-		System.out.println("Fetching a key succeeded!");
+		
+		System.out.println("The following URI was request and found: " + cg.getURI());
+		
 		
 		String id = Frirc.requestURItoID(cg.getURI());
 		Map<String, String> identity = im.getIdentityByID(id);
 		
-		if (im.getOwnNickByID(id) != null && isCalibrated.containsKey(identity)) //don't do things with your own onSucces
+		if (im.getOwnNickByID(id) != null && isCalibrated.get(identity)) //don't do things with your own onSucces
 		{
 			return;
 		}
@@ -316,5 +331,11 @@ public class MessageManager implements ClientGetCallback, RequestClient, ClientP
 				calibrate(identity);
 			}
 		}
+	}
+
+	public void terminate() {
+		isCalibrated.clear();
+		blackList.clear();
+		identityLastDNF.clear();
 	}
 }
