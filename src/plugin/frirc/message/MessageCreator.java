@@ -48,6 +48,13 @@ public class MessageCreator extends MessageBase{
 		return getXMLString(xmlDoc);
 	}
 
+	
+	/**
+	 * Convenience method to get the Document to a String
+	 * @param xmlDoc
+	 * @return
+	 */
+	
 	private StringWriter getXMLString(Document xmlDoc)
 	{
 		StringWriter result = new StringWriter();
@@ -65,6 +72,11 @@ public class MessageCreator extends MessageBase{
 		return result;
 	}
 
+	/**
+	 * Create an XML file resembling a privmsg (can go to either channel or user in IRC)
+	 * @param message
+	 * @return
+	 */
 	
 	public synchronized StringWriter createPrivMessage(IRCMessage message)
 	{
@@ -87,5 +99,30 @@ public class MessageCreator extends MessageBase{
 		return getXMLString(xmlDoc);
 	}
 
+	/**
+	 * Create an XML message for leaving a channel
+	 * @param message
+	 * @return
+	 */
+	
+	public synchronized StringWriter createPartMessage(IRCMessage message)
+	{
+		Document xmlDoc;
+		synchronized(mDocumentBuilder) { // TODO: Figure out whether the DocumentBuilder is maybe synchronized anyway 
+			xmlDoc = mDOM.createDocument(null, Frirc.NAMESPACE, null);
+		}
+
+		Element rootElement = xmlDoc.getDocumentElement();
+
+		//Create the identity Element
+		Element messageElement = xmlDoc.createElement("message");
+		messageElement.setAttribute("type", "part");
+		messageElement.setAttribute("timestamp", Long.toString(System.currentTimeMillis()));
+		
+		messageElement.setTextContent(message.getValue());
+		rootElement.appendChild(messageElement);
+
+		return getXMLString(xmlDoc);
+	}
 	
 }

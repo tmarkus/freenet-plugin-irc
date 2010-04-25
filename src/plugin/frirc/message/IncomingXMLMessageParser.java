@@ -68,7 +68,12 @@ public class IncomingXMLMessageParser extends MessageBase {
 				IRCMessage message = IRCMessage.createJOINMessage(im.getIdentityByID(Frirc.requestURItoID(uri)), channel);
 				return message;
 			}
-			
+			else if (type.equals("part"))
+			{
+				String channel = Frirc.requestURItoChannel(uri);
+				IRCMessage message = IRCMessage.createPartMessage(im.getIdentityByID(Frirc.requestURItoID(uri)), channel);
+				return message;
+			}
 			
 		} catch (IOException e) {
 			System.err.println("Something went wrong with parsing the XML!");

@@ -145,6 +145,16 @@ public class IRCServer extends Thread {
 	{
 		return locals.keySet();
 	}
+
+	/**
+	 * Stop tracking a channel
+	 * @param cm
+	 */
+	
+	public void removeChannel(ChannelManager cm)
+	{
+		channels.remove(cm);
+	}
 	
 	/**
 	 * Process and possibly reply to IRC messages
@@ -263,12 +273,9 @@ public class IRCServer extends Thread {
 		{
 			HashMap<String, String> identity = (HashMap<String, String>) getIdentityByConnection(source);
 			ChannelManager manager = getChannelManager(message.getChannel(), identity);
-			
-			//inform all localClients in the same channel that the user has left
-			sendAllLocalClientsInChannel(manager, IRCMessage.createPartMessage(identity, message.getChannel()));
-			manager.removeIdentity(identity);
-			channels.remove(manager);
-			manager.stop();
+
+			IncomingMessageHandler incoming = new IncomingMessageHandler(manager, identityManager);
+			incoming.processMessage(message, identity);
 		}
 
 		/**

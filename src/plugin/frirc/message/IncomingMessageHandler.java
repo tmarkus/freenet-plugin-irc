@@ -54,5 +54,30 @@ public class IncomingMessageHandler extends MessageBase{
 				cm.addIdentity(identity);
 				cm.getServer().sendAllLocalClientsInChannel(cm, message);
 			}
+			else if (message.getType().equals("PART"))
+			{
+				cm.removeIdentity(identity);
+				
+				if (im.getOwnNickByID(identity.get("ID")) != null) //one of our own identities?
+				{
+					//insert message into freenet
+					MessageCreator mc = new MessageCreator();
+					StringWriter messageString = mc.createPartMessage(message);
+					cm.getMessageManager().insertNewMessage(identity, messageString);
+
+					//let all local clients know that we've left
+					cm.getServer().sendAllLocalClientsInChannel(cm, message);
+					
+					//inform all localClients in the same channel that the user has left
+					cm.removeIdentity(identity);
+					cm.getServer().removeChannel(cm);
+					cm.stop();
+				}
+				else //not one of our own identities?
+				{
+					cm.removeIdentity(identity);
+					cm.getServer().sendAllLocalClientsInChannel(cm, message);
+				}
+			}
 	}
 }

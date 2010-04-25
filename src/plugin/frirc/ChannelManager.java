@@ -133,7 +133,7 @@ public class ChannelManager extends Thread {
 		mm.calibrate(identity);
 	}
 	
-	public void removeIdentity(HashMap<String, String> identity)
+	public void removeIdentity(Map<String, String> identity)
 	{
 		channelIdentities.remove(identity);
 	}
