@@ -178,11 +178,7 @@ public class ChannelManager extends Thread {
 			if (index != Frirc.currentIndex())
 			{
 				//setup listeners for all the people in my WoT
-				for(Map<String, String> identity : getIdentities())
-				{
-						setupListeners();
-				}
-
+				setupListeners();
 				index = Frirc.currentIndex();
 			}
 			

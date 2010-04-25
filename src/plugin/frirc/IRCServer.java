@@ -267,6 +267,7 @@ public class IRCServer extends Thread {
 			//inform all localClients in the same channel that the user has left
 			sendAllLocalClientsInChannel(manager, IRCMessage.createPartMessage(identity, message.getChannel()));
 			manager.removeIdentity(identity);
+			channels.remove(manager);
 			manager.stop();
 		}
 

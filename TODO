@@ -1,19 +1,14 @@
 Release:
 
--- implement blacklist for fetch succeeded
--- implement log list for outgoing request that are too old (current index -2 or something), cancel those very old request
-
--- update the identities in the channel accordingly when calibrated, no when receiving a new message AFTER being calibrated
--- expire old connections
--- support leaving a channel timeout / explicitly
-
-- publish the fact that we are leaving a channel to freenet (which is different from a timeout)
+- implement log list for outgoing request that are too old (current index -2 or something), cancel those very old request
+- support leaving a channel timeout / explicitly
+- add other identity hints
 - provide simple instructions when visiting the plugin through http
-- check trust of a hinted identity (calculated trust, not manually assigned)
-- properly use rank for first identity listeners
 
 Next version(s):
 
+- check trust of a hinted identity (calculated trust, not manually assigned)
+- properly use rank for first identity listeners
 - do proper logging instead of writing to stdout
 - discover other channels (support /list)
 - sample identity hints from all channels instead of the current associated one

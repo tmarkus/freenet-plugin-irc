@@ -171,10 +171,12 @@ public class Frirc implements FredPlugin, FredPluginHTTP, FredPluginThreadless, 
 		String channel = requestURItoChannel(uri);
 		String id = requestURItoID(uri);
 		int waypoint = requestURIToWaypoint(uri);
-		int index = requestURIToIndex(uri);
+		int number = requestURIToIndex(uri);
+		
+		if (waypoint != currentIndex()) number = -1; //new waypoint so reset the counter
 		
 		try {
-			return  new FreenetURI("SSK@" + id + "/" + Frirc.NAMESPACE + "-" + cleanChannel(channel) + "-" + waypoint + "-" + (index+1) + "/feed");
+			return  new FreenetURI("SSK@" + id + "/" + Frirc.NAMESPACE + "-" + cleanChannel(channel) + "-" + Frirc.currentIndex() + "-" + (number+1) + "/feed");
 		} catch (MalformedURLException e) {
 			e.printStackTrace();
 			return null;

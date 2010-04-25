@@ -81,7 +81,7 @@ public class MessageManager implements ClientGetCallback, RequestClient, ClientP
 	
 	public void calibrate(Map<String, String> identity)
 	{
-			if (!isCalibrated.containsKey(identity)) //don't reset the calibrated status
+			if (!isCalibrated.containsKey(identity)) //don't reset the calibrated status, but keep it
 			{
 				isCalibrated.put(identity, false);
 			}
@@ -198,7 +198,7 @@ public class MessageManager implements ClientGetCallback, RequestClient, ClientP
 		String id = Frirc.requestURItoID(cg.getURI());
 		Map<String, String> identity = im.getIdentityByID(id);
 		
-		if (im.getOwnNickByID(id) != null) //don't do things with your own onSucces
+		if (im.getOwnNickByID(id) != null && isCalibrated.containsKey(identity)) //don't do things with your own onSucces
 		{
 			return;
 		}
