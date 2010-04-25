@@ -2,6 +2,7 @@ package plugin.frirc.message;
 
 import java.io.StringWriter;
 import java.util.HashMap;
+import java.util.Map;
 
 import javax.xml.transform.TransformerException;
 import javax.xml.transform.dom.DOMSource;
@@ -24,7 +25,7 @@ public class MessageCreator extends MessageBase{
 	 * 
 	 */
 	
-	public synchronized StringWriter createChannelPing(HashMap<String, String> identity)
+	public synchronized StringWriter createChannelPing(Map<String, String> identity)
 	{
 		Document xmlDoc;
 		synchronized(mDocumentBuilder) { 

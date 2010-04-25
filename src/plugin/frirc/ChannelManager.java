@@ -54,8 +54,8 @@ public class ChannelManager extends Thread {
 	private IdentityManager identityManager;
 	private PluginRespirator pr;
 	
-	private HashSet<HashMap<String,String>> channelIdentities = 
-					new HashSet<HashMap<String,String>>(); 							// which identities are in which channel?
+	private HashSet<Map<String,String>> channelIdentities = 
+					new HashSet<Map<String,String>>(); 							// which identities are in which channel?
 	
 	private MessageManager mm;
 	
@@ -96,7 +96,7 @@ public class ChannelManager extends Thread {
 	 * @return
 	 */
 	
-	public HashSet<HashMap<String, String>> getIdentities()
+	public HashSet<Map<String, String>> getIdentities()
 	{
 		return channelIdentities;
 	}
@@ -106,7 +106,7 @@ public class ChannelManager extends Thread {
 	 * @return
 	 */
 	
-	public HashSet<HashMap<String, String>> getOwnIdentities()
+	public HashSet<Map<String, String>> getOwnIdentities()
 	{
 		return channelIdentities;
 	}
@@ -122,12 +122,12 @@ public class ChannelManager extends Thread {
 		return this.server;
 	}
 	
-	public HashSet<HashMap<String, String>> getChannelIdentities()
+	public HashSet<Map<String, String>> getChannelIdentities()
 	{
 		return this.channelIdentities;
 	}
 
-	public void addIdentity(HashMap<String, String> identity)
+	public void addIdentity(Map<String, String> identity)
 	{
 		channelIdentities.add(identity);
 		mm.calibrate(identity);
@@ -169,22 +169,25 @@ public class ChannelManager extends Thread {
 	@Override
 	public void run()
 	{
+		long index = Frirc.currentIndex();
+		
 		while(true)
 		{
-			try {
+			System.out.println("MARK");
 
+			if (index != Frirc.currentIndex())
+			{
 				//setup listeners for all the people in my WoT
 				for(Map<String, String> identity : getIdentities())
 				{
-					/*
-					if (!isCalibrated.get(identity.get("ID")))
-					{
-						//setupWoTListener(identity);
-					}
-					*/
+						setupListeners();
 				}
-				
-				Thread.sleep(100);
+
+				index = Frirc.currentIndex();
+			}
+			
+			try {
+				Thread.sleep(5000);
 			} catch (InterruptedException e) {
 				e.printStackTrace();
 			}

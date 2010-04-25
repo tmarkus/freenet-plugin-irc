@@ -235,6 +235,13 @@ public class IdentityManager implements FredPluginTalker {
 		identity.put("nick", "freenet1");
 		identity.put("Value", "100");
 		identities.add(identity);
+
+		
+		HashMap<String, String> identity2 = new HashMap<String,String>();
+		identity2.put("ID", "enQbW4kdLsYqFCLtq~a4OquE5uwKa3nHFqLih64j5KU,ROkkyPxiFajC2N7RUs4oRVw2iotEp-hOV4EID0BRC9g,AQACAAE");
+		identity2.put("nick", "freenet2");
+		identity2.put("Value", "100");
+		identities.add(identity2);
 	}
 
 	/**

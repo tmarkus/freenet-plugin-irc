@@ -341,7 +341,7 @@ public class IRCMessage {
 		return new IRCMessage(":" + IRCServer.SERVERNAME + " MODE " + channel + " +nt");
 	}
 	
-	public static List<IRCMessage> createChannelJoinNickList(HashMap<String, String> identity, String channel, HashSet<HashMap<String, String>> channelIdentities)
+	public static List<IRCMessage> createChannelJoinNickList(Map<String, String> identity, String channel, HashSet<Map<String, String>> channelIdentities)
 	{
 		List<IRCMessage> messages = new ArrayList<IRCMessage>();
 		

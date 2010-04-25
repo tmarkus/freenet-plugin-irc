@@ -114,6 +114,7 @@ public class IRCServer extends Thread {
 			manager = new ChannelManager(channel, this, pr, identity);
 			channels.add(manager);
 			manager.setupListeners(); //start listening to other WoT identities also having content
+			manager.start();
 		}
 		return manager;
 	}
@@ -228,7 +229,7 @@ public class IRCServer extends Thread {
 		{
 			//retrieve the nick associated with the connection
 			String channel = message.getChannel();
-			HashMap<String, String> identity = (HashMap<String, String>) getIdentityByConnection(source);
+			Map<String, String> identity = getIdentityByConnection(source);
 			
 			
 			ChannelManager manager = getChannelManager(channel, identity); 
@@ -266,6 +267,7 @@ public class IRCServer extends Thread {
 			//inform all localClients in the same channel that the user has left
 			sendAllLocalClientsInChannel(manager, IRCMessage.createPartMessage(identity, message.getChannel()));
 			manager.removeIdentity(identity);
+			manager.stop();
 		}
 
 		/**
@@ -279,7 +281,7 @@ public class IRCServer extends Thread {
 			HashMap<String, String> identity = (HashMap<String, String>) getIdentityByConnection(source);
 
 			ChannelManager cm = getChannelManager(channel, identity);
-			IncomingMessageHandler incoming = new IncomingMessageHandler(cm);
+			IncomingMessageHandler incoming = new IncomingMessageHandler(cm, identityManager);
 			incoming.processMessage(message, identity);
 		}
 
@@ -341,8 +343,7 @@ public class IRCServer extends Thread {
 			}
 			
 			System.out.println("Closing IRC server...");
-			locals.clear();
-			channels.clear();
+			terminate();
 			return;
 		}
 		catch (TransformerConfigurationException e) {
@@ -369,6 +370,14 @@ public class IRCServer extends Thread {
 		}
 	
 		//do something smart with clearing channels and signalling threads to stop listening etc
+		locals.clear();
+		
+		for(ChannelManager manager : channels)
+		{
+			manager.stop();
+		}
+			
+		channels.clear();	
 	}
 
 	public boolean stopThread()

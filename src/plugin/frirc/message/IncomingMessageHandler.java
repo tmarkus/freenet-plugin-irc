@@ -2,18 +2,22 @@ package plugin.frirc.message;
 
 import java.io.StringWriter;
 import java.util.HashMap;
+import java.util.Map;
 
 import plugin.frirc.ChannelManager;
 import plugin.frirc.IRCMessage;
+import plugin.frirc.IdentityManager;
 
 public class IncomingMessageHandler extends MessageBase{
 
 	private ChannelManager cm;
+	private IdentityManager im;
 	
-	public IncomingMessageHandler(ChannelManager cm)
+	public IncomingMessageHandler(ChannelManager cm, IdentityManager im)
 	{
 		super();
 		this.cm = cm;
+		this.im = im;
 	}
 	
 	
@@ -21,21 +25,21 @@ public class IncomingMessageHandler extends MessageBase{
 	 * Function only called for messages meant for this channel
 	 * @param message
 	 */
-	public void processMessage(IRCMessage message, HashMap<String, String> identity)
+	public void processMessage(IRCMessage message, Map<String, String> identity)
 	{
 			if (message.getType().equals("PRIVMSG"))
 			{
-				if (!cm.getOwnIdentities().contains(identity)) //message coming from some freenet client?
+				if (im.getOwnNickByID(identity.get("ID")) == null) //not one of our own identities
 				{
 					//check if the nickname is in the channel already
 					if (!cm.getChannelIdentities().contains(identity)) // not? send JOIN message
 					{
-						cm.getChannelIdentities().add(identity);
-						cm.getServer().sendLocalMessage(IRCMessage.createJOINMessage(identity, cm.getChannel()), identity);
+						cm.addIdentity(identity);
+						cm.getServer().sendAllLocalClientsInChannel(cm, IRCMessage.createJOINMessage(identity, cm.getChannel()));
 					}
 		
 					// emulate message coming from the nick
-					cm.getServer().sendLocalMessage(IRCMessage.createChannelMessage(identity, cm.getChannel(), message), identity);
+					cm.getServer().sendAllLocalClientsInChannel(cm, IRCMessage.createChannelMessage(identity, cm.getChannel(), message));
 				}
 				else //message coming from our own local client
 				{
@@ -44,6 +48,11 @@ public class IncomingMessageHandler extends MessageBase{
 					StringWriter messageString = mc.createPrivMessage(message);
 					cm.getMessageManager().insertNewMessage(identity, messageString);
 				}
+			}
+			else if (message.getType().equals("JOIN"))
+			{
+				cm.addIdentity(identity);
+				cm.getServer().sendAllLocalClientsInChannel(cm, message);
 			}
 	}
 }

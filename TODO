@@ -1,13 +1,12 @@
 Release:
 
+-- implement blacklist for fetch succeeded
+-- implement log list for outgoing request that are too old (current index -2 or something), cancel those very old request
+
 -- update the identities in the channel accordingly when calibrated, no when receiving a new message AFTER being calibrated
--- process privmsgs
--- send received freenetclientinput to local clients
 -- expire old connections
 -- support leaving a channel timeout / explicitly
 
-
-- redo distribution of messages to local and remote connections
 - publish the fact that we are leaving a channel to freenet (which is different from a timeout)
 - provide simple instructions when visiting the plugin through http
 - check trust of a hinted identity (calculated trust, not manually assigned)

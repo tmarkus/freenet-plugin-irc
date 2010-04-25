@@ -4,6 +4,8 @@ import java.io.StringWriter;
 import java.net.MalformedURLException;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
 
 import plugin.frirc.message.IncomingMessageHandler;
@@ -49,6 +51,9 @@ public class MessageManager implements ClientGetCallback, RequestClient, ClientP
 	private HighLevelSimpleClient hl;
 	private HighLevelSimpleClient low_priority_hl;
 	
+	private List<FreenetURI> blackList = new LinkedList<FreenetURI>(); //uris which have been requested once and may not be requested again
+	
+	
 	public MessageManager(ChannelManager cm, IdentityManager im, PluginRespirator pr, HighLevelSimpleClient hl, HighLevelSimpleClient low_priority_hl)
 	{
 		this.cm = cm;
@@ -76,7 +81,10 @@ public class MessageManager implements ClientGetCallback, RequestClient, ClientP
 	
 	public void calibrate(Map<String, String> identity)
 	{
-			isCalibrated.put(identity, false);
+			if (!isCalibrated.containsKey(identity)) //don't reset the calibrated status
+			{
+				isCalibrated.put(identity, false);
+			}
 			
 			FreenetURI fetchURI;
 			try {
@@ -93,7 +101,7 @@ public class MessageManager implements ClientGetCallback, RequestClient, ClientP
 	 * @param message
 	 */
 
-	public void insertNewMessage(HashMap<String, String> identity, StringWriter message)
+	public void insertNewMessage(Map<String, String> identity, StringWriter message)
 	{
 		try {
 			FreenetURI requestURI = new FreenetURI(identityLastDNF.get(IdentityManager.getIdentityInMap(identity, identityLastDNF.keySet())));
@@ -106,7 +114,7 @@ public class MessageManager implements ClientGetCallback, RequestClient, ClientP
 			//insert content at next index
 			InsertBlock insertBlock = new InsertBlock(new SimpleReadOnlyArrayBucket(message.toString().getBytes()), null, insertURI);
 			hl.insert(insertBlock, false, "feed", false, hl.getInsertContext(true), this);
-
+			
 		} catch (MalformedURLException e) {
 			e.printStackTrace();
 		}
@@ -122,10 +130,10 @@ public class MessageManager implements ClientGetCallback, RequestClient, ClientP
 		String id = Frirc.requestURItoID(cg.getURI());
 
 		//lookup identity for URL and setup calibration
-		IdentityManager manager = new IdentityManager(pr, cm.getOwnIdentityChannelMembers().get(0));
+		//IdentityManager manager = new IdentityManager(pr, cm.getOwnIdentityChannelMembers().get(0));
 
 		try {
-			while(!manager.allReady())
+			while(!im.allReady())
 			{
 				Thread.sleep(100);
 			}
@@ -133,7 +141,7 @@ public class MessageManager implements ClientGetCallback, RequestClient, ClientP
 			e1.printStackTrace();
 		}
 		
-		HashMap<String, String> identity = (HashMap<String, String>) manager.getIdentityByID(id);
+		Map<String, String> identity = im.getIdentityByID(id);
 		
 		//store latest DNF for identity
 		updateDNF(identity, cg.getURI());
@@ -150,12 +158,12 @@ public class MessageManager implements ClientGetCallback, RequestClient, ClientP
 				MessageCreator mc = new MessageCreator();
 				insertNewMessage(identity, mc.createChannelPing(identity));
 			}
-			else //TODO: we've calibrated an identity other than our own, do something with it?
+			else
 			{
 				System.out.println("Hello, I've calibrated another user, now watching for future messages");
 				
 				try {
-					pendingRequests.add(hl.fetch(cg.getURI() ,20000, this, this, ULPRFC));
+					pendingRequests.add(hl.fetch(cg.getURI(), 20000, this, this, ULPRFC));
 				} catch (FetchException e) {
 					e.printStackTrace();
 				}
@@ -188,12 +196,25 @@ public class MessageManager implements ClientGetCallback, RequestClient, ClientP
 		System.out.println("Fetching a key succeeded!");
 		
 		String id = Frirc.requestURItoID(cg.getURI());
-
+		Map<String, String> identity = im.getIdentityByID(id);
+		
+		if (im.getOwnNickByID(id) != null) //don't do things with your own onSucces
+		{
+			return;
+		}
+		
+		if (blackList.contains(cg.getURI())) //a success is only allowed to be triggered once
+		{
+			return;
+		}
+		blackList.add(cg.getURI());
+		
+		
 		//lookup identity for URL and setup calibration
-		IdentityManager manager = new IdentityManager(pr,  cm.getOwnIdentityChannelMembers().get(0));
+		//IdentityManager manager = new IdentityManager(pr,  cm.getOwnIdentityChannelMembers().get(0));
 
 		try {
-			while(!manager.allReady())
+			while(!im.allReady())
 			{
 				Thread.sleep(100);
 			}
@@ -201,24 +222,20 @@ public class MessageManager implements ClientGetCallback, RequestClient, ClientP
 			e1.printStackTrace();
 		}
 		
-		HashMap<String, String> identity = (HashMap<String, String>) manager.getIdentityByID(id);
 
 		if (isCalibrated.get(IdentityManager.getIdentityInMap(identity, isCalibrated.keySet())) == true)
 		{
-			System.out.println("Received uri thingy and will proceed with processing the message");
-			
 			try
 			{
-			
-			//convert XML to an IRCMessage
-			IncomingXMLMessageParser parser = new IncomingXMLMessageParser(im);
-
-			//really process the message
-			IRCMessage message = parser.parse(fr, cg.getURI());
-			IncomingMessageHandler incomingMessageHandler = new IncomingMessageHandler(cm);
-
-			//send the locally connected clients the contents of the message (assuming it is a message, handle channelpings, differently)
-			incomingMessageHandler.processMessage(message, identity);
+				//convert XML to an IRCMessage
+				IncomingXMLMessageParser parser = new IncomingXMLMessageParser(im);
+	
+				//really process the message
+				IRCMessage message = parser.parse(fr, cg.getURI());
+				IncomingMessageHandler incomingMessageHandler = new IncomingMessageHandler(cm, im);
+	
+				//send the locally connected clients the contents of the message (assuming it is a message, handle channelpings, differently)
+				incomingMessageHandler.processMessage(message, identity);
 			}
 			catch(Exception e)
 			{
@@ -286,8 +303,9 @@ public class MessageManager implements ClientGetCallback, RequestClient, ClientP
 		//setup listeners and try to calibrate them
 		for(Map<String, String> identity : im.getAllIdentities())   // im.getOwnIdentities()) //FIXME: change to request only rank1 identities, this is a hack for testing!
 		{
-			boolean listen = true;
-			for(Map<String, String> ownIdentity : im.getOwnIdentities())
+			boolean listen = true; //only start listening for identities other than your own (prevents infinite loop)
+			
+			for(Map<String, String> ownIdentity : cm.getChannelIdentities()) //OWN identity in the same channel on same IRC server?
 			{
 				if (identity.get("ID").equals(ownIdentity.get("ID"))) listen = false;
 			}
