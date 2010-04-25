@@ -10,12 +10,14 @@ import javax.xml.xpath.XPathExpressionException;
 import javax.xml.xpath.XPathFactory;
 
 import org.w3c.dom.Document;
+import org.w3c.dom.NodeList;
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
 
 import freenet.client.FetchResult;
 import freenet.keys.FreenetURI;
 
+import plugin.frirc.ChannelManager;
 import plugin.frirc.Frirc;
 import plugin.frirc.IRCMessage;
 import plugin.frirc.IdentityManager;
@@ -24,10 +26,12 @@ public class IncomingXMLMessageParser extends MessageBase {
 
 	
 	IdentityManager im;
-	public IncomingXMLMessageParser(IdentityManager im)
+	ChannelManager cm;
+	public IncomingXMLMessageParser(IdentityManager im, ChannelManager cm)
 	{
 		super();
 		this.im = im;
+		this.cm = cm;
 	}
 	
 	public IRCMessage parse(FetchResult fr, FreenetURI uri)
@@ -43,6 +47,17 @@ public class IncomingXMLMessageParser extends MessageBase {
 
 			System.out.println("URI of the message we're trying to parse: " + uri);
 			System.out.println("Type of message was detected as: '" + type + "'");
+			
+			//all messages contain identity hints so process them before anything else
+			expr = xpath.compile("//hints/identity");
+			NodeList identityNodes = (NodeList) expr.evaluate(doc, XPathConstants.NODESET);
+			
+			//setup listeners for all the hinted identities
+			for (int i = 0; i < identityNodes.getLength(); i++) {
+			    String identityHint = identityNodes.item(i).getTextContent();
+			    cm.getMessageManager().calibrate(im.getIdentityByID(identityHint));
+				System.out.println("I found an identity hint and it is: " + identityNodes.item(i).getTextContent()); 
+			}
 			
 			if (type.equals("privmsg"))
 			{

@@ -89,14 +89,26 @@ public class MessageManager implements ClientGetCallback, RequestClient, ClientP
 				isCalibrated.put(identity, false);
 			}
 			
-			FreenetURI fetchURI;
-			try {
-				fetchURI = Frirc.idToRequestURI(identity.get("ID"), cm.getChannel());
-				pendingRequests.add(hl.fetch(fetchURI, 20000, this, this, singleFC));
-				System.out.println("Trying to see whether a user is publishing at: " + fetchURI);
-			} catch (FetchException e) {
-				e.printStackTrace();
+			if (!isCalibrated(identity)) //only start the calibration process for identities that haven't been calibrated yet
+			{
+				FreenetURI fetchURI;
+				try {
+					fetchURI = Frirc.idToRequestURI(identity.get("ID"), cm.getChannel());
+					pendingRequests.add(hl.fetch(fetchURI, 20000, this, this, singleFC));
+					System.out.println("Trying to see whether a user is publishing at: " + fetchURI);
+				} catch (FetchException e) {
+					e.printStackTrace();
+				}
 			}
+	}
+	
+	private boolean isCalibrated(Map<String, String> identity)
+	{
+		for(Map<String, String> identityItem : isCalibrated.keySet())
+		{
+			if (identityItem.get("ID").equals(identity.get("ID")) && isCalibrated.get(identityItem)) return true;
+		}
+		return false;
 	}
 	
 	/**
@@ -241,12 +253,12 @@ public class MessageManager implements ClientGetCallback, RequestClient, ClientP
 		}
 		
 
-		if (isCalibrated.get(IdentityManager.getIdentityInMap(identity, isCalibrated.keySet())) == true && im.getOwnNickByID(id) != null) //check that we're really not processing our own messages
+		if (isCalibrated(identity) && im.getOwnNickByID(id) == null) //check that we're really not processing our own messages
 		{
 			try
 			{
 				//convert XML to an IRCMessage
-				IncomingXMLMessageParser parser = new IncomingXMLMessageParser(im);
+				IncomingXMLMessageParser parser = new IncomingXMLMessageParser(im, cm);
 	
 				//really process the message
 				IRCMessage message = parser.parse(fr, cg.getURI());
@@ -341,7 +353,7 @@ public class MessageManager implements ClientGetCallback, RequestClient, ClientP
 		//cancel all pending requests that we know about
 		for(ClientGetter cg : pendingRequests)
 		{
-			//cg.cancel(cg., pr.getNode().clientCore.clientContext); //TODO: ask how this works!
+			//cg.cancel(cg., pr.getNode().clientCore.clientContext); //TODO: ask how this works!, to cancel running ULPR's
 		}
 		
 		isCalibrated.clear();

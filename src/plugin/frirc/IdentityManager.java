@@ -127,7 +127,6 @@ public class IdentityManager implements FredPluginTalker {
 		return null;
 	}
 
-	
 	/**
 	 * Retrieve the personal WoT identities to associate with nicknames
 	 */
