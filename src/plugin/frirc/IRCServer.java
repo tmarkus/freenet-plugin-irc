@@ -109,12 +109,14 @@ public class IRCServer extends Thread {
 		}
 		if (manager == null) //setup a new channelmanager
 		{
-			System.out.println("Creating new ChannelManager with identity: " + identity.get("ID"));
+			System.out.println("Creating new ChannelManager with identity: " + identity.get("Identity"));
 			
 			manager = new ChannelManager(channel, this, pr, identity);
 			channels.add(manager);
 			manager.setupListeners(); //start listening to other WoT identities also having content
 			manager.start();
+		
+			manager.getIdentityManager().addOwnIdentityContext(identity); //register the frirc context upon using a WoT identity 
 		}
 		return manager;
 	}

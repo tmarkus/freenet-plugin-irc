@@ -124,11 +124,27 @@ public class ChannelManager extends Thread {
 	}
 	
 	
+	/**
+	 * Determine whether an identity is present in the channel or not
+	 * @param identity
+	 * @return
+	 */
 	
 	public boolean inChannel(Map<String, String> identity)
 	{
 		return channelIdentities.contains(identity);
 	}
+	
+	/**
+	 * Retrieve the identity manager for this channel (tied to a single own WoT identity)
+	 * @return
+	 */
+	
+	public IdentityManager getIdentityManager()
+	{
+		return identityManager;
+	}
+	
 	
 	@Override
 	public void run()

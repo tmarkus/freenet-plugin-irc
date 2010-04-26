@@ -190,7 +190,9 @@ public class IdentityManager implements FredPluginTalker {
 				identity.put("ID", sfs.getString("RequestURI"+i).split("/")[0].replace("USK@", ""));
 				identity.put("insertID", sfs.getString("InsertURI"+i).split("/")[0].replace("USK@", ""));
 				identity.put("nick", sfs.getString("Nickname"+i));
+				identity.put("Identity", sfs.getString("Identity"+i));
 
+				
 				ownIdentities.add(identity);
 				System.out.println("Identity added from WoT: " + identity.get("nick") + " (" + identity.get("ID") + ")");
 				++i;
@@ -200,6 +202,21 @@ public class IdentityManager implements FredPluginTalker {
 		}
 	}
 
+	/**
+	 * Register the frirc context with an identity of your own
+	 * @param own_identity
+	 */
+	
+	public void addOwnIdentityContext(Map<String, String> own_identity)
+	{
+		SimpleFieldSet sfs = new SimpleFieldSet(true);
+		sfs.putOverwrite("Message", "AddContext");
+		sfs.putOverwrite("Identity", own_identity.get("Identity"));
+		sfs.putOverwrite("Context", "FrIRC");
+
+		talker.send(sfs, null);
+	}
+	
 	
 	private void addIdentities(SimpleFieldSet sfs)
 	{
@@ -217,6 +234,7 @@ public class IdentityManager implements FredPluginTalker {
 				identity.put("ID", sfs.getString("RequestURI"+i).split("/")[0].replace("USK@", ""));
 				identity.put("nick", sfs.getString("Nickname"+i));
 				identity.put("Value", sfs.getString("Value"+i));
+				identity.put("Identity", sfs.getString("Identity"+i));
 				
 				//System.out.println("Added identity: " + identity.get("nick"));
 				
@@ -228,7 +246,7 @@ public class IdentityManager implements FredPluginTalker {
 		}
 	
 	
-		//FIXME: hack for broken WoT (from the perspective of freenet2)
+		//FIXME: hack for broken WoT (from the perspective of freenet2/freenet1)
 		HashMap<String, String> identity = new HashMap<String,String>();
 		identity.put("ID", "67gJMSsyOg0OqifgD-Aebtw8XwKVx~vjVuRbo0WXsI4,4tbrCVGd3fvNTAwUxVZFFzaqoskEp85HgBkwpe~hiD0,AQACAAE");
 		identity.put("nick", "freenet1");
