@@ -145,7 +145,7 @@ public class IdentityManager implements FredPluginTalker {
 			SimpleFieldSet sfs = new SimpleFieldSet(true);
 			sfs.putOverwrite("Message", "GetTrustees");
 			sfs.putOverwrite("Identity", identity.get("ID").split(",")[0]); //a personal identity (associated through source) (only pass the ID, not the full SSK)
-			sfs.putOverwrite("Context", ""); //empty means selecting all identities no matter the context
+			sfs.putOverwrite("Context", "FrIRC"); //empty means selecting all identities no matter the context
 			talker.send(sfs, null);	//send message to WoT plugin
 			
 			System.out.println("requested identities for identity " + identity.get("ID").split(",")[0]);
