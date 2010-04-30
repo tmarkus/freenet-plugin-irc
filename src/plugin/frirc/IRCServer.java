@@ -281,7 +281,21 @@ public class IRCServer extends Thread {
 			IncomingMessageHandler incoming = new IncomingMessageHandler(manager, identityManager);
 			incoming.processMessage(message, identity);
 		}
-
+		
+		/**
+		 * LIST
+		 */
+		
+		else if (message.getType().equals("LIST") && !message.getValue().equals("STOP"))
+		{
+			HashMap<String, String> identity = (HashMap<String, String>) getIdentityByConnection(source);
+			
+			for(IRCMessage messageElement : IRCMessage.createListChannels(identity, channels))
+			{
+				sendLocalMessage(messageElement, identity);	
+			}
+		}
+		
 		/**
 		 * Message for channel
 		 */

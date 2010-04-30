@@ -1,9 +1,15 @@
 Release:
 
+
+- Insert, from time to time, a list of subscribed channels (upon joining a channel? -> insert a list of all channels???)
+
+
+
+
 - TESTING!
 - Implement WHO usernames listing for a channel, some IRC clients require this
 - Trigger a part after we haven't seen an identity for a long time
-
+- channel list
 
 Next version(s):
 
@@ -11,7 +17,6 @@ Next version(s):
 - check trust of a hinted identity (calculated trust, not manually assigned)
 - properly use rank for first identity listeners
 - do proper logging instead of writing to stdout
-- discover other channels (support /list)
 - sample identity hints from all channels instead of the current associated one
 - private encrypted channels
 - personal messages?

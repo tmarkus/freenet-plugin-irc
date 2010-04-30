@@ -10,6 +10,8 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 
+import plugins.WoT.Identity;
+
 import freenet.pluginmanager.PluginRespirator;
 
 /**
@@ -39,9 +41,15 @@ public class IRCMessage {
 		
 		String[] split = message.split(" ");
 		
-		if (message.equals("QUIT"))
+		if (split[0].equals("QUIT"))
 		{
 			this.type = "QUIT";
+		}
+		
+		else if (split[0].equals("LIST"))
+		{
+			this.type = "LIST";
+			if (split.length > 1) this.value = split[1];
 		}
 		
 		else if (split[0].equals("NICK"))
@@ -354,6 +362,21 @@ public class IRCMessage {
 
 		return messages;
 	}
+	
+	public static List<IRCMessage> createListChannels(Map<String, String> identity, List<ChannelManager> channels)
+	{
+		List<IRCMessage> messages = new ArrayList<IRCMessage>();
+		messages.add(new IRCMessage(":" + IRCServer.SERVERNAME + " 321 " + identity.get("nick") + " Channel :Users  Name"));
+		
+		for(ChannelManager manager : channels)
+		{
+			messages.add(new IRCMessage(":" + IRCServer.SERVERNAME + " 322 " + identity.get("nick") + " " + manager.getChannel() + " " + manager.getIdentities().size() + " :" + manager.getTopic()));
+		}
+		
+		messages.add(new IRCMessage(":" + IRCServer.SERVERNAME + " 323 " + identity.get("nick") + " :End of /LIST"));
+		return messages;
+	}
+	
 	
 	public static IRCMessage createPartMessage(Map<String, String> identity, String channel)
 	{

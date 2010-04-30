@@ -17,6 +17,7 @@ public class ChannelManager extends Thread {
 	private IRCServer server;
 	private IdentityManager identityManager;
 	private PluginRespirator pr;
+	private String topic = "Topic support isn't implemented";
 	
 	private HashSet<Map<String,String>> channelIdentities = 
 					new HashSet<Map<String,String>>(); 							// which identities are in which channel?
@@ -80,6 +81,12 @@ public class ChannelManager extends Thread {
 	{
 		return this.channel;
 	}
+	
+	public String getTopic()
+	{
+		return this.topic;
+	}
+	
 	
 	public IRCServer getServer()
 	{
