@@ -371,18 +371,28 @@ public class MessageManager implements ClientGetCallback, RequestClient, ClientP
 	}
 
 	/**
-	 * Cancel long running ULPR's that are too old and no longer of interest
+	 * Cancel long running ULPR's that are too old and no longer of interest, and remove them from the pendingRequests list
+	 * 
 	 */
 	
 	public void cleanupRequests()
 	{
+		List<ClientGetter> cleanupList = new LinkedList<ClientGetter>();
+		
 		for(ClientGetter outstandingRequest : pendingRequests)
 		{
 			if (Frirc.requestURIToWaypoint(outstandingRequest.getURI()) < Frirc.currentIndex() - 2 * Frirc.WAYPOINT_DURATION)
 			{
+				cleanupList.add(outstandingRequest);
 				outstandingRequest.cancel(null, pr.getNode().clientCore.clientContext);
 			}
 		}
+	
+		for(ClientGetter cg : cleanupList)
+		{
+			pendingRequests.remove(cg);
+		}
+	
 	}
 
 
