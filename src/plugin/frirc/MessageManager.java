@@ -47,8 +47,6 @@ public class MessageManager implements ClientGetCallback, RequestClient, ClientP
 	
 	private HashSet<ClientGetter> pendingRequests = new HashSet<ClientGetter>();  			//manage all outstanding connections
 	
-	
-	
 	private Map<Map<String, String>, Boolean> isCalibrated = new HashMap<Map<String, String>, Boolean>();		//store whether an identity is calibrated yet or not
 	private Map<Map<String, String>, String> identityLastDNF = new HashMap<Map<String, String>, String>();		//store the last url that could not be retrieved for the identity
 	
@@ -56,7 +54,6 @@ public class MessageManager implements ClientGetCallback, RequestClient, ClientP
 	private HighLevelSimpleClient low_priority_hl;
 	
 	private List<FreenetURI> blackList = new LinkedList<FreenetURI>(); //uris which have been requested once and may not be requested again
-	
 	
 	public MessageManager(ChannelManager cm, IdentityManager im, PluginRespirator pr, HighLevelSimpleClient hl, HighLevelSimpleClient low_priority_hl)
 	{
@@ -342,7 +339,6 @@ public class MessageManager implements ClientGetCallback, RequestClient, ClientP
 		//cancel all pending requests that we know about
 		for(ClientGetter cg : pendingRequests)
 		{
-			//cg.cancel(cg. null , pr.getNode().clientCore.clientContext); //TODO: ask how this works!, to cancel running ULPR's
 			cg.cancel(null, pr.getNode().clientCore.clientContext);
 		}
 		
@@ -373,4 +369,21 @@ public class MessageManager implements ClientGetCallback, RequestClient, ClientP
 			
 		}
 	}
+
+	/**
+	 * Cancel long running ULPR's that are too old and no longer of interest
+	 */
+	
+	public void cleanupRequests()
+	{
+		for(ClientGetter outstandingRequest : pendingRequests)
+		{
+			if (Frirc.requestURIToWaypoint(outstandingRequest.getURI()) < Frirc.currentIndex() - 2 * Frirc.WAYPOINT_DURATION)
+			{
+				outstandingRequest.cancel(null, pr.getNode().clientCore.clientContext);
+			}
+		}
+	}
+
+
 }

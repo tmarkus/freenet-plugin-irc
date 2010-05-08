@@ -168,6 +168,9 @@ public class ChannelManager extends Thread {
 				//trigger a nenw channelping for the ownidentities
 				triggerChannelpings();
 				
+				//cleanup outstanding requests that are no longer of interest
+				mm.cleanupRequests();
+				
 				index = Frirc.currentIndex();
 			}
 			

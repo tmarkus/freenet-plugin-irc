@@ -27,7 +27,7 @@ public class Frirc implements FredPlugin, FredPluginHTTP, FredPluginThreadless, 
 	public static String NAMESPACE = "frirc";
 	public static String WoT_NAMESPACE = "plugins.WoT.WoT";
 	
-	public static int SAVEPOINT = 1 * 60 * 1000 ; //ms
+	public static int WAYPOINT_DURATION = 1 * 60 * 1000 ; //ms
 	public static long TIMEOUT = 5 *60 * 1000; //ms
 	
 	private IRCServer IRCServer;
@@ -37,7 +37,7 @@ public class Frirc implements FredPlugin, FredPluginHTTP, FredPluginThreadless, 
 	
 	public static long currentIndex()
 	{
-		return System.currentTimeMillis() / SAVEPOINT;
+		return System.currentTimeMillis() / WAYPOINT_DURATION;
 	}
 	
 	
