@@ -102,11 +102,13 @@ public class ChannelManager extends Thread {
 	{
 		channelIdentities.add(identity);
 		mm.calibrate(identity);
+		server.getChannelSearcher().addChannel(channel, identity);
 	}
 	
 	public void removeIdentity(Map<String, String> identity)
 	{
 		channelIdentities.remove(identity);
+		server.getChannelSearcher().removeFromChannel(channel, identity);
 	}
 
 	public void setupListeners()

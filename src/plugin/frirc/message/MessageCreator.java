@@ -61,7 +61,7 @@ public class MessageCreator extends MessageBase{
 	
 	private void addRandomChannels(Document xmlDoc, Element rootElement)
 	{
-		Element hintsElement = xmlDoc.createElement("channelHints");
+		Element hintsElement = xmlDoc.createElement("ChannelHints");
 		
 		List<String> channels = new ArrayList<String>(cm.getServer().getChannelSearcher().getChannels());
 		

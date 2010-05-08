@@ -71,7 +71,7 @@ public class IRCMessage {
 		else if (split[0].equals("MODE"))
 		{
 			this.type = "MODE";
-			this.channel = split[1];
+			this.channel = split[1].toLowerCase();
 			if (split.length > 2) this.value = split[2];
 		}
 		
@@ -86,32 +86,32 @@ public class IRCMessage {
 		else if (split[0].equals("WHO"))
 		{
 			this.type = "WHO";
-			this.channel = split[1];
+			this.channel = split[1].toLowerCase();
 		}
 		
 		else if (split[0].equals("JOIN"))
 		{
 			this.type = "JOIN";
-			if (split.length > 1) this.channel = split[1];
+			if (split.length > 1) this.channel = split[1].toLowerCase();
 		}
 
 		else if (split[0].equals("PART") && split.length == 2)
 		{
 			this.type = "PART";
-			this.channel = split[1];
+			this.channel = split[1].toLowerCase();
 		}
 		
 		else if (split[1].equals("PART") && split.length == 3)
 		{
 			this.type = "PART";
-			this.channel = split[2];
+			this.channel = split[2].toLowerCase();
 			this.username = split[0];
 		}
 		
 		else if (split[0].equals("TOPIC"))
 		{
 			this.type = "TOPIC";
-			if (split.length > 1) this.channel = split[1];
+			if (split.length > 1) this.channel = split[1].toLowerCase();
 			if (split.length > 2) this.value = split[2];
 		}
 		
@@ -147,7 +147,7 @@ public class IRCMessage {
 		else if (split.length == 3 && split[1].equals("JOIN"))
 		{
 			this.type = split[1];
-			this.channel = split[2];
+			this.channel = split[2].toLowerCase();
 			this.value = split[0];
 		}
 		else if (split.length == 3 && split[1].equals("MODE"))
@@ -159,7 +159,7 @@ public class IRCMessage {
 		{
 			this.type = "PRIVMSG";
 			this.username = split[0];
-			this.channel = split[2];
+			this.channel = split[2].toLowerCase();
 			
 			for(int i=3; i < split.length; i++)
 			{
@@ -170,7 +170,7 @@ public class IRCMessage {
 		else if (split.length > 2 && split[0].equals("PRIVMSG"))
 		{
 			this.type = "PRIVMSG";
-			this.channel = split[1];
+			this.channel = split[1].toLowerCase();
 			
 			for(int i=2; i < split.length; i++)
 			{
@@ -374,7 +374,7 @@ public class IRCMessage {
 		for(String channel : channelSearcher.getChannels())
 		{
 			//messages.add(new IRCMessage(":" + IRCServer.SERVERNAME + " 322 " + identity.get("nick") + " " + channel + " " + manager.getIdentities().size() + " :" + manager.getTopic()));
-			messages.add(new IRCMessage(":" + IRCServer.SERVERNAME + " 322 " + identity.get("nick") + " " + channel + " " + "1" + " :" + ""));
+			messages.add(new IRCMessage(":" + IRCServer.SERVERNAME + " 322 " + identity.get("nick") + " " + channel + " " + channelSearcher.getChannelCount(channel) + " :" + ""));
 		}
 		
 		messages.add(new IRCMessage(":" + IRCServer.SERVERNAME + " 323 " + identity.get("nick") + " :End of /LIST"));

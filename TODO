@@ -1,12 +1,15 @@
 Release:
 
 - TESTING!
+
+- don't rejoin a channel, over, and over, and over... again
+- cancelling older requests doesn't seem to work (should be fixed... TEST)
+- don't request a key too often, just ugly
 - Implement WHO usernames listing for a channel, some IRC clients require this
 - Trigger a part after we haven't seen an identity for a long time
 
 Next version(s):
 
-- implement log list for outgoing request that are too old (current index -2 or something), cancel those very old request
 - check trust of a hinted identity (calculated trust, not manually assigned)
 - properly use rank for first identity listeners
 - do proper logging instead of writing to stdout

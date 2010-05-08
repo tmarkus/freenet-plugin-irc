@@ -381,7 +381,7 @@ public class MessageManager implements ClientGetCallback, RequestClient, ClientP
 		
 		for(ClientGetter outstandingRequest : pendingRequests)
 		{
-			if (Frirc.requestURIToWaypoint(outstandingRequest.getURI()) < Frirc.currentIndex() - 2 * Frirc.WAYPOINT_DURATION)
+			if (Frirc.requestURIToWaypoint(outstandingRequest.getURI()) < (System.currentTimeMillis() - (2 * Frirc.WAYPOINT_DURATION))/Frirc.WAYPOINT_DURATION)
 			{
 				cleanupList.add(outstandingRequest);
 				outstandingRequest.cancel(null, pr.getNode().clientCore.clientContext);

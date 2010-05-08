@@ -52,6 +52,33 @@ public class ChannelSearcher  {
 		}
 	}
 	
+	public void removeFromChannel(String channel, Map<String, String> identity)
+	{
+		if (channels.containsKey(channel))
+		{
+			channels.get(channel).remove(identity.get("ID"));
+		}
+	}
+
+	/**
+	 * Lookup the number of known users in the channel
+	 * @param channel
+	 * @return
+	 */
+	
+	public int getChannelCount(String channel)
+	{
+		try
+		{
+			return channels.get(channel).size();
+		}
+		catch(NullPointerException e)
+		{
+			return 0;
+		}
+	}
+	
+	
 	/**
 	 * Remove all the knowledge about channels that we currently have
 	 */

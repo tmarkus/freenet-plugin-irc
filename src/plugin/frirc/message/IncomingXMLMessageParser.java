@@ -77,11 +77,11 @@ public class IncomingXMLMessageParser extends MessageBase {
 			}
 			
 			//process channelhints
-			expr = xpath.compile("//channelHints/channel");
+			expr = xpath.compile("//ChannelHints/channel");
 			NodeList channels = (NodeList) expr.evaluate(doc, XPathConstants.NODESET);
 	
-			for (int i = 0; i < identityNodes.getLength(); i++) {
-			    String channelName = identityNodes.item(i).getTextContent();
+			for (int i = 0; i < channels.getLength(); i++) {
+			    String channelName = channels.item(i).getTextContent();
 			    cm.getServer().getChannelSearcher().addChannel(channelName, identity);
 			}
 			
