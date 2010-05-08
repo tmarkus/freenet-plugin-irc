@@ -20,7 +20,6 @@ import freenet.keys.FreenetURI;
 
 import plugin.frirc.ChannelManager;
 import plugin.frirc.Frirc;
-import plugin.frirc.IRCMessage;
 import plugin.frirc.IRCServer;
 import plugin.frirc.IdentityManager;
 
@@ -47,11 +46,13 @@ public class IncomingXMLMessageParser extends MessageBase {
 			XPathExpression expr = xpath.compile("//message/@type");
 			String type = (String) expr.evaluate(doc, XPathConstants.STRING);
 
+			Map<String,String> identity = im.getIdentityByID(Frirc.requestURItoID(uri));
+			
 			System.out.println("URI of the message we're trying to parse: " + uri);
 			System.out.println("Type of message was detected as: '" + type + "'");
 			
 			//all messages contain identity hints so process them before anything else
-			expr = xpath.compile("//hints/identity");
+			expr = xpath.compile("//IdentityHints/identity");
 			NodeList identityNodes = (NodeList) expr.evaluate(doc, XPathConstants.NODESET);
 			
 			//setup listeners for all the hinted identities
@@ -75,6 +76,16 @@ public class IncomingXMLMessageParser extends MessageBase {
 				}
 			}
 			
+			//process channelhints
+			expr = xpath.compile("//channels/channel");
+			NodeList channels = (NodeList) expr.evaluate(doc, XPathConstants.NODESET);
+	
+			for (int i = 0; i < identityNodes.getLength(); i++) {
+			    String channelName = identityNodes.item(i).getTextContent();
+			    cm.getServer().getChannelSearcher().addChannel(channelName, identity);
+			}
+			
+			//process a channel message
 			if (type.equals("privmsg"))
 			{
 				expr = xpath.compile("//message/@timestamp");
@@ -85,19 +96,21 @@ public class IncomingXMLMessageParser extends MessageBase {
 	
 				String channel = Frirc.requestURItoChannel(uri);
 				
-				IRCMessage message = IRCMessage.createChannelMessage(im.getIdentityByID(Frirc.requestURItoID(uri)), channel, messageText);
+				IRCMessage message = IRCMessage.createChannelMessage(identity, channel, messageText);
 				return message;
 			}
+			
+			//regular channel ping
 			else if (type.equals("channelping"))
 			{
 				String channel = Frirc.requestURItoChannel(uri);
-				IRCMessage message = IRCMessage.createJOINMessage(im.getIdentityByID(Frirc.requestURItoID(uri)), channel);
+				IRCMessage message = IRCMessage.createJOINMessage(identity, channel);
 				return message;
 			}
 			else if (type.equals("part"))
 			{
 				String channel = Frirc.requestURItoChannel(uri);
-				IRCMessage message = IRCMessage.createPartMessage(im.getIdentityByID(Frirc.requestURItoID(uri)), channel);
+				IRCMessage message = IRCMessage.createPartMessage(identity, channel);
 				return message;
 			}
 			

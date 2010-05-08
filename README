@@ -1,6 +1,6 @@
 A freenet IRC plugin.
 
-You need to connect with an irc client with your nick set to the nickname of an existing WoT identity.
+You need to connect with an irc client with your nick set to the nickname of an existing Freenet WoT identity.
 Currently both parties that wish to exchange messages need to trust eachother in WoT.
 
 Code is currently in rough shape, expect loads of debug output in all the wrong places.

@@ -27,6 +27,8 @@ import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.transform.TransformerConfigurationException;
 import javax.xml.transform.TransformerFactoryConfigurationError;
 
+import plugin.frirc.connections.LocalClient;
+import plugin.frirc.message.IRCMessage;
 import plugin.frirc.message.IncomingMessageHandler;
 
 import freenet.pluginmanager.PluginRespirator;
@@ -36,18 +38,19 @@ public class IRCServer extends Thread {
 	public static final String SERVERNAME = "freenetIRCserver";
 	private PluginRespirator pr;
 	private ServerSocket serverSocket;
-	private IdentityManager identityManager;
+	private IdentityManager im;
 	
 	//local outgoing connections
 	private Map<Map<String, String>, LocalClient> locals = new HashMap<Map<String, String>, LocalClient>();
 	private List<ChannelManager> channels = new ArrayList<ChannelManager>();
 	
 	private List<String> localClientDistributionBlacklist = new LinkedList<String>();
+	private ChannelSearcher channelSearcher;
 	
 	public IRCServer(PluginRespirator pr)
 	{
 		this.pr = pr;
-		this.identityManager = new IdentityManager(pr, null);
+		this.im = new IdentityManager(pr, null);
 	}
 
 	/**
@@ -120,6 +123,17 @@ public class IRCServer extends Thread {
 		}
 		return manager;
 	}
+
+	/**
+	 * Retrieve the channel searcher
+	 * @return
+	 */
+	
+	public ChannelSearcher getChannelSearcher()
+	{
+		return channelSearcher;
+	}
+	
 	
 	/**
 	 * Send all the local clients in some channel identified by the ChannelManager a message 
@@ -175,7 +189,7 @@ public class IRCServer extends Thread {
 		{	
 			//remove old identity map
 			Map<String, String> old_identity = getIdentityByConnection(source);
-			Map<String, String> new_identity = identityManager.getIdentityByNick(message.getNick());
+			Map<String, String> new_identity = im.getIdentityByNick(message.getNick());
 			locals.remove(old_identity);
 			locals.put(new_identity, source);
 			
@@ -189,10 +203,14 @@ public class IRCServer extends Thread {
 			}
 			
 			//tell client if nick is not a known a WoT identity that we know the user has
-			if (!identityManager.getOwnIdentities().contains(new_identity))
+			if (!im.getOwnIdentities().contains(new_identity))
 			{
 				source.sendMessage(IRCMessage.createServerNoticeMessage(message.getNick(), "Could not associate that nick with a WoT identity. Reload the plugin if you just added it or check whether it is actually correct. Joining channels will NOT work!"));
 				source.sendMessage(new IRCMessage("QUIT"));
+			}
+			else //identity is OK, so initialize a channelSearcher for this connecting identity
+			{
+				this.channelSearcher = new ChannelSearcher(im);
 			}
 		}
 
@@ -278,7 +296,7 @@ public class IRCServer extends Thread {
 			HashMap<String, String> identity = (HashMap<String, String>) getIdentityByConnection(source);
 			ChannelManager manager = getChannelManager(message.getChannel(), identity);
 
-			IncomingMessageHandler incoming = new IncomingMessageHandler(manager, identityManager);
+			IncomingMessageHandler incoming = new IncomingMessageHandler(manager, im);
 			incoming.processMessage(message, identity);
 		}
 		
@@ -290,7 +308,7 @@ public class IRCServer extends Thread {
 		{
 			HashMap<String, String> identity = (HashMap<String, String>) getIdentityByConnection(source);
 			
-			for(IRCMessage messageElement : IRCMessage.createListChannels(identity, channels))
+			for(IRCMessage messageElement : IRCMessage.createListChannels(identity, channelSearcher))
 			{
 				sendLocalMessage(messageElement, identity);	
 			}
@@ -307,7 +325,7 @@ public class IRCServer extends Thread {
 			HashMap<String, String> identity = (HashMap<String, String>) getIdentityByConnection(source);
 
 			ChannelManager cm = getChannelManager(channel, identity);
-			IncomingMessageHandler incoming = new IncomingMessageHandler(cm, identityManager);
+			IncomingMessageHandler incoming = new IncomingMessageHandler(cm, im);
 			incoming.processMessage(message, identity);
 		}
 
@@ -395,6 +413,7 @@ public class IRCServer extends Thread {
 			manager.terminate();
 		}
 			
+		channelSearcher.reset();
 		channels.clear();
 		locals.clear();
 		localClientDistributionBlacklist.clear();

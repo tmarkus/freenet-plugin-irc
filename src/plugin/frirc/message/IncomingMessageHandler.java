@@ -4,7 +4,6 @@ import java.io.StringWriter;
 import java.util.Map;
 
 import plugin.frirc.ChannelManager;
-import plugin.frirc.IRCMessage;
 import plugin.frirc.IdentityManager;
 
 public class IncomingMessageHandler extends MessageBase{

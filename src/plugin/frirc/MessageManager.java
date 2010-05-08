@@ -8,6 +8,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
+import plugin.frirc.message.IRCMessage;
 import plugin.frirc.message.IncomingMessageHandler;
 import plugin.frirc.message.IncomingXMLMessageParser;
 import plugin.frirc.message.MessageCreator;

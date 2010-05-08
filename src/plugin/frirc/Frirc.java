@@ -33,7 +33,7 @@ public class Frirc implements FredPlugin, FredPluginHTTP, FredPluginThreadless, 
 	private IRCServer IRCServer;
 	
 	public static int MAX_IDENTITY_HINTS = 3;
-	
+	public static int MAX_CHANNEL_HINTS = 3;
 	
 	public static long currentIndex()
 	{

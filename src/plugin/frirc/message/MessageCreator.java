@@ -1,6 +1,7 @@
 package plugin.frirc.message;
 
 import java.io.StringWriter;
+import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -15,7 +16,6 @@ import org.w3c.dom.Element;
 
 import plugin.frirc.ChannelManager;
 import plugin.frirc.Frirc;
-import plugin.frirc.IRCMessage;
 
 public class MessageCreator extends MessageBase{
 	
@@ -35,7 +35,7 @@ public class MessageCreator extends MessageBase{
 	
 	private void addRandomIdentities(Document xmlDoc, Element rootElement)
 	{
-		Element hintsElement = xmlDoc.createElement("hints");
+		Element hintsElement = xmlDoc.createElement("IdentityHints");
 		
 		List<Map<String, String>> identities = new LinkedList<Map<String, String>>(cm.getChannelIdentities());
 		Random random = new Random();
@@ -45,6 +45,29 @@ public class MessageCreator extends MessageBase{
 			Element identityElement = xmlDoc.createElement("identity");
 			identityElement.setTextContent(identities.get(random.nextInt(identities.size())).get("ID"));
 			hintsElement.appendChild(identityElement);
+		}
+		
+		rootElement.appendChild(hintsElement);
+	}
+	
+	/**
+	 * Add a random selection of channels that we're in
+	 * @param xmlDoc
+	 * @param rootElement
+	 */
+	
+	private void addRandomChannels(Document xmlDoc, Element rootElement)
+	{
+		Element hintsElement = xmlDoc.createElement("channelHints");
+		
+		List<String> channels = new ArrayList<String>(cm.getServer().getChannelSearcher().getChannels());
+		Random random = new Random();
+		
+		for(int i=0; i < Frirc.MAX_CHANNEL_HINTS; i++)
+		{
+			Element channelElement = xmlDoc.createElement("channel");
+			channelElement.setTextContent(channels.get(random.nextInt(channels.size())));
+			hintsElement.appendChild(channelElement);
 		}
 		
 		rootElement.appendChild(hintsElement);
@@ -67,6 +90,7 @@ public class MessageCreator extends MessageBase{
 		/* Create the identity Element */
 		Element messageElement = xmlDoc.createElement("message");
 		addRandomIdentities(xmlDoc, rootElement);
+		addRandomChannels(xmlDoc, rootElement);
 		
 		messageElement.setAttribute("type", "channelping");
 		messageElement.setAttribute("timestamp", Long.toString(System.currentTimeMillis()));
@@ -120,6 +144,7 @@ public class MessageCreator extends MessageBase{
 		messageElement.setAttribute("type", "privmsg");
 		messageElement.setAttribute("timestamp", Long.toString(System.currentTimeMillis()));
 		addRandomIdentities(xmlDoc, rootElement);
+		addRandomChannels(xmlDoc, rootElement);
 		
 		messageElement.setTextContent(message.getValue());
 		rootElement.appendChild(messageElement);
@@ -147,6 +172,7 @@ public class MessageCreator extends MessageBase{
 		messageElement.setAttribute("type", "part");
 		messageElement.setAttribute("timestamp", Long.toString(System.currentTimeMillis()));
 		addRandomIdentities(xmlDoc, rootElement);
+		addRandomChannels(xmlDoc, rootElement);
 		
 		messageElement.setTextContent(message.getValue());
 		rootElement.appendChild(messageElement);
