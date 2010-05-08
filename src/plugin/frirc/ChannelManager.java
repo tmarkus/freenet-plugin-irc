@@ -164,6 +164,10 @@ public class ChannelManager extends Thread {
 			{
 				//setup listeners for all the people in my WoT
 				setupListeners();
+				
+				//trigger a nenw channelping for the ownidentities
+				triggerChannelpings();
+				
 				index = Frirc.currentIndex();
 			}
 			
@@ -175,6 +179,10 @@ public class ChannelManager extends Thread {
 		}
 	}
 
+
+	private void triggerChannelpings() {
+		mm.triggerChannelpings();
+	}
 
 	public void terminate()
 	{

@@ -90,6 +90,7 @@ public class MessageManager implements ClientGetCallback, RequestClient, ClientP
 				isCalibrated.put(identity, false);
 			}
 			
+			//FIXME: check that continuesly recalibrating identities is a good thing or not... (maybe high priorities for already known identities in the channel and lower for the rest?)
 			if (!isCalibrated(identity)) //only start the calibration process for identities that haven't been calibrated yet
 			{
 				FreenetURI fetchURI;
@@ -97,6 +98,16 @@ public class MessageManager implements ClientGetCallback, RequestClient, ClientP
 					fetchURI = Frirc.idToRequestURI(identity.get("ID"), cm.getChannel());
 					pendingRequests.add(hl.fetch(fetchURI, 20000, this, this, singleFC));
 					System.out.println("Trying to see whether a user is publishing at: " + fetchURI);
+				} catch (FetchException e) {
+					e.printStackTrace();
+				}
+			}
+			else //we're already calibrated so set a ULPR for the next message, not a single fetch
+ 			{
+				FreenetURI fetchURI;
+				try {
+					fetchURI = Frirc.idToRequestURI(identity.get("ID"), cm.getChannel());
+					pendingRequests.add(hl.fetch(fetchURI, 20000, this, this, ULPRFC));
 				} catch (FetchException e) {
 					e.printStackTrace();
 				}
@@ -187,14 +198,25 @@ public class MessageManager implements ClientGetCallback, RequestClient, ClientP
 	{
 		if (IdentityManager.identityInMap(identity, identityLastDNF.keySet()))
 		{
-			identityLastDNF.put(IdentityManager.getIdentityInMap(identity, identityLastDNF.keySet()), uri.toString());
+			try {
+				FreenetURI current_uri = new FreenetURI(identityLastDNF.get(IdentityManager.getIdentityInMap(identity, identityLastDNF.keySet())));
+				
+				//only accept increasing URIs not older ones (waypoint >, or waypoint == old_waypoint && index is > )
+				if (Frirc.requestURIToWaypoint(current_uri) < Frirc.requestURIToWaypoint(uri) || (Frirc.requestURIToWaypoint(current_uri) == Frirc.requestURIToWaypoint(uri) && Frirc.requestURIToIndex(current_uri) < Frirc.requestURIToIndex(uri)  ))
+				{
+					identityLastDNF.put(IdentityManager.getIdentityInMap(identity, identityLastDNF.keySet()), uri.toString());
+				}
+			}
+			catch (MalformedURLException e) {
+				e.printStackTrace();
+			}
 		}
 		else
 		{
 			identityLastDNF.put(identity, uri.toString());
 		}
 	}
-	
+
 	private String getLastDNF(Map<String, String> identity)
 	{
 		for(Map<String, String> identityElement : identityLastDNF.keySet())
@@ -276,7 +298,7 @@ public class MessageManager implements ClientGetCallback, RequestClient, ClientP
 
 	@Override
 	public boolean persistent() {
-		return true;
+		return false;
 	}
 
 	@Override
@@ -311,18 +333,7 @@ public class MessageManager implements ClientGetCallback, RequestClient, ClientP
 		//setup listeners and try to calibrate them
 		for(Map<String, String> identity : im.getAllIdentities())
 		{
-			boolean listen = true; //only start listening for identities other than your own (prevents infinite loop)
-			
-			for(Map<String, String> ownIdentity : cm.getChannelIdentities()) //OWN identity in the same channel on same IRC server? -> don't start listening for your own messages
-			{
-				if (identity.get("ID").equals(ownIdentity.get("ID"))) listen = false;
-			}
-			
-			if (listen)
-			{
-				System.out.println("Starting to calibrate: " + identity.get("ID"));
-				calibrate(identity);
-			}
+			calibrate(identity);
 		}
 	}
 
@@ -331,11 +342,35 @@ public class MessageManager implements ClientGetCallback, RequestClient, ClientP
 		//cancel all pending requests that we know about
 		for(ClientGetter cg : pendingRequests)
 		{
-			//cg.cancel(cg., pr.getNode().clientCore.clientContext); //TODO: ask how this works!, to cancel running ULPR's
+			//cg.cancel(cg. null , pr.getNode().clientCore.clientContext); //TODO: ask how this works!, to cancel running ULPR's
+			cg.cancel(null, pr.getNode().clientCore.clientContext);
 		}
 		
 		isCalibrated.clear();
 		blackList.clear();
 		identityLastDNF.clear();
+	}
+
+	/**
+	 * Insert a channelping again when upon a changing waypoint (only for own identities in the channel!)
+	 */
+	
+	public void triggerChannelpings() {
+		
+		for(Map<String, String> identity : im.getOwnIdentities())
+		{
+			for(Map<String, String> channelIdentity : cm.getChannelIdentities()) //don't start listening to a channelidentity again
+			{
+				if (identity.get("ID").equals(channelIdentity.get("ID"))) {
+					MessageCreator mc = new MessageCreator(cm);
+					
+					// we want to insert at the new index, not at the latest old one!
+					// we act is we checked that the key we want to insert to isn't inserted already (DNF upon request)
+					updateDNF(channelIdentity, Frirc.idToRequestURI(channelIdentity.get("ID"), cm.getChannel())); 
+					insertNewMessage(identity, mc.createChannelPing(identity));
+				}
+			}
+			
+		}
 	}
 }

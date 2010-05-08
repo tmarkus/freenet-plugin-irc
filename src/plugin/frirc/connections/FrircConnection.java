@@ -87,18 +87,14 @@ public abstract class FrircConnection extends Thread implements RequestClient {
 	  }
 
 
-		@Override
-		public boolean persistent() {
-			// TODO Auto-generated method stub
-			return false;
-		}
+	@Override
+	public boolean persistent() {
+		return false;
+	}
 
 
-		@Override
-		public void removeFrom(ObjectContainer arg0) {
-			// TODO Auto-generated method stub
-			
-		}
+	@Override
+	public void removeFrom(ObjectContainer arg0) {		}
 
 
 	public String getNick()
