@@ -27,8 +27,8 @@ public class Frirc implements FredPlugin, FredPluginHTTP, FredPluginThreadless, 
 	public static String NAMESPACE = "frirc";
 	public static String WoT_NAMESPACE = "plugins.WoT.WoT";
 	
-	public static int SAVEPOINT = 240 * 1000 ; //ms
-	public static long TIMEOUT = 5*60  * 1000; //ms
+	public static int SAVEPOINT = 1 * 60 * 1000 ; //ms
+	public static long TIMEOUT = 5 *60 * 1000; //ms
 	
 	private IRCServer IRCServer;
 	

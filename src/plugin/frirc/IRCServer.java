@@ -266,6 +266,7 @@ public class IRCServer extends Thread {
 			
 			ChannelManager manager = getChannelManager(channel, identity); 
 			manager.addIdentity(identity);
+			channelSearcher.addChannel(channel, identity);
 			
 			//inform all localClients in the same channel that the user has joined
 			sendAllLocalClientsInChannel(manager, IRCMessage.createJOINMessage(identity, channel)); 

@@ -38,15 +38,18 @@ public class MessageCreator extends MessageBase{
 		Element hintsElement = xmlDoc.createElement("IdentityHints");
 		
 		List<Map<String, String>> identities = new LinkedList<Map<String, String>>(cm.getChannelIdentities());
-		Random random = new Random();
 		
-		for(int i=0; i < Frirc.MAX_IDENTITY_HINTS; i++)
+		if (identities.size() > 0)
 		{
-			Element identityElement = xmlDoc.createElement("identity");
-			identityElement.setTextContent(identities.get(random.nextInt(identities.size())).get("ID"));
-			hintsElement.appendChild(identityElement);
+			Random random = new Random();
+			
+			for(int i=0; i < Frirc.MAX_IDENTITY_HINTS; i++)
+			{
+				Element identityElement = xmlDoc.createElement("identity");
+				identityElement.setTextContent(identities.get(random.nextInt(identities.size())).get("ID"));
+				hintsElement.appendChild(identityElement);
+			}
 		}
-		
 		rootElement.appendChild(hintsElement);
 	}
 	
@@ -61,15 +64,18 @@ public class MessageCreator extends MessageBase{
 		Element hintsElement = xmlDoc.createElement("channelHints");
 		
 		List<String> channels = new ArrayList<String>(cm.getServer().getChannelSearcher().getChannels());
-		Random random = new Random();
 		
-		for(int i=0; i < Frirc.MAX_CHANNEL_HINTS; i++)
+		if (channels.size() > 0)
 		{
-			Element channelElement = xmlDoc.createElement("channel");
-			channelElement.setTextContent(channels.get(random.nextInt(channels.size())));
-			hintsElement.appendChild(channelElement);
+			Random random = new Random();
+			
+			for(int i=0; i < Frirc.MAX_CHANNEL_HINTS; i++)
+			{
+				Element channelElement = xmlDoc.createElement("channel");
+				channelElement.setTextContent(channels.get(random.nextInt(channels.size())));
+				hintsElement.appendChild(channelElement);
+			}
 		}
-		
 		rootElement.appendChild(hintsElement);
 	}
 	

@@ -107,7 +107,7 @@ public class MessageManager implements ClientGetCallback, RequestClient, ClientP
 	{
 		for(Map<String, String> identityItem : isCalibrated.keySet())
 		{
-			if (identityItem.get("ID").equals(identity.get("ID")) && isCalibrated.get(identityItem)) return true;
+			if (identityItem.get("ID").equals(identity.get("ID")) && isCalibrated.get(identityItem) == true) return true;
 		}
 		return false;
 	}
@@ -141,27 +141,13 @@ public class MessageManager implements ClientGetCallback, RequestClient, ClientP
 
 
 	@Override
-	public synchronized void onFailure(FetchException fe, ClientGetter cg, ObjectContainer oc) {
-
-		
+	public synchronized void onFailure(FetchException fe, ClientGetter cg, ObjectContainer oc) 
+	{
 		System.out.println("Failed to retrieve key: " + cg.getURI() + " (DNF)");
 		
 		String id = Frirc.requestURItoID(cg.getURI());
-
-		//lookup identity for URL and setup calibration
-		//IdentityManager manager = new IdentityManager(pr, cm.getOwnIdentityChannelMembers().get(0));
-
-		try {
-			while(!im.allReady())
-			{
-				Thread.sleep(100);
-			}
-		} catch (InterruptedException e1) {
-			e1.printStackTrace();
-		}
-		
 		Map<String, String> identity = im.getIdentityByID(id);
-		
+
 		//store latest DNF for identity
 		updateDNF(identity, cg.getURI());
 		
@@ -223,7 +209,7 @@ public class MessageManager implements ClientGetCallback, RequestClient, ClientP
 	public synchronized void onSuccess(FetchResult fr, ClientGetter cg, ObjectContainer oc) {
 		 
 		
-		System.out.println("The following URI was request and found: " + cg.getURI());
+		System.out.println("The following URI was requested and found: " + cg.getURI());
 		
 		
 		String id = Frirc.requestURItoID(cg.getURI());
@@ -236,6 +222,7 @@ public class MessageManager implements ClientGetCallback, RequestClient, ClientP
 		
 		if (blackList.contains(cg.getURI())) //a success is only allowed to be triggered once
 		{
+			blackList.remove(cg.getURI().toString());
 			return;
 		}
 		blackList.add(cg.getURI());
@@ -243,16 +230,6 @@ public class MessageManager implements ClientGetCallback, RequestClient, ClientP
 		
 		//lookup identity for URL and setup calibration
 		//IdentityManager manager = new IdentityManager(pr,  cm.getOwnIdentityChannelMembers().get(0));
-
-		try {
-			while(!im.allReady())
-			{
-				Thread.sleep(100);
-			}
-		} catch (InterruptedException e1) {
-			e1.printStackTrace();
-		}
-		
 
 		if (isCalibrated(identity) && im.getOwnNickByID(id) == null) //check that we're really not processing our own messages
 		{
@@ -336,7 +313,7 @@ public class MessageManager implements ClientGetCallback, RequestClient, ClientP
 		{
 			boolean listen = true; //only start listening for identities other than your own (prevents infinite loop)
 			
-			for(Map<String, String> ownIdentity : cm.getChannelIdentities()) //OWN identity in the same channel on same IRC server?
+			for(Map<String, String> ownIdentity : cm.getChannelIdentities()) //OWN identity in the same channel on same IRC server? -> don't start listening for your own messages
 			{
 				if (identity.get("ID").equals(ownIdentity.get("ID"))) listen = false;
 			}

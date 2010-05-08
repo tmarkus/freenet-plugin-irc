@@ -77,7 +77,7 @@ public class IncomingXMLMessageParser extends MessageBase {
 			}
 			
 			//process channelhints
-			expr = xpath.compile("//channels/channel");
+			expr = xpath.compile("//channelHints/channel");
 			NodeList channels = (NodeList) expr.evaluate(doc, XPathConstants.NODESET);
 	
 			for (int i = 0; i < identityNodes.getLength(); i++) {
