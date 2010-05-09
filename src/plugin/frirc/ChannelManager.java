@@ -98,11 +98,12 @@ public class ChannelManager extends Thread {
 		return this.channelIdentities;
 	}
 
-	public void addIdentity(Map<String, String> identity)
+	public boolean addIdentity(Map<String, String> identity)
 	{
-		channelIdentities.add(identity);
 		mm.calibrate(identity);
 		server.getChannelSearcher().addChannel(channel, identity);
+		
+		return channelIdentities.add(identity);
 	}
 	
 	public void removeIdentity(Map<String, String> identity)

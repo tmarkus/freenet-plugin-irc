@@ -51,8 +51,10 @@ public class IncomingMessageHandler extends MessageBase{
 			
 			else if (message.getType().equals("JOIN"))
 			{
-				cm.addIdentity(identity);
-				cm.getServer().sendAllLocalClientsInChannel(cm, message);
+				if (cm.addIdentity(identity))
+				{
+					cm.getServer().sendAllLocalClientsInChannel(cm, message);
+				}
 			}
 			
 			
