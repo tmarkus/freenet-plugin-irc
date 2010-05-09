@@ -22,7 +22,7 @@ public class IdentityManager implements FredPluginTalker {
 	private PluginRespirator pr;
 	private boolean locked_all = true;
 	private boolean locked_own = true;
-
+	private Map<String, String> own_identity;
 	
 	/**
 	 * Initialize a new IdentityManager
@@ -33,6 +33,7 @@ public class IdentityManager implements FredPluginTalker {
 	public IdentityManager(PluginRespirator pr, Map<String, String> identity)
 	{
 		this.pr = pr;
+		this.own_identity = identity;
 		
 		try {
 			this.talker = pr.getPluginTalker(this, Frirc.WoT_NAMESPACE, "WoT");
@@ -238,7 +239,14 @@ public class IdentityManager implements FredPluginTalker {
 				
 				//System.out.println("Added identity: " + identity.get("nick"));
 				
-				identities.add(identity);
+				//check that the identity isn't already in the map
+				boolean add = true;
+				for(Map<String, String> existingIdentity : identities)
+				{
+					if (existingIdentity.get("ID").equals(identity.get("ID"))) add = false;
+				}
+				
+				if (add) identities.add(identity);
 				i++;
 			}
 		} catch (FSParseException e) { //triggered when we've reached the end of the identity list
@@ -335,6 +343,16 @@ public class IdentityManager implements FredPluginTalker {
 			if (identityItem.get("ID").equals(identity.get("ID"))) return identityItem;
 		}
 		return null;
+	}
+
+	/**
+	 * Reload the identity lists
+	 */
+	
+	public void reload()
+	{
+		locked_all = true;
+		sendFCPAllIdentities(own_identity);
 	}
 	
 }

@@ -165,6 +165,9 @@ public class ChannelManager extends Thread {
 		{
 			if (index != Frirc.currentIndex())
 			{
+				//reload the identities from the WoT (maybe we've got new ones?)
+				identityManager.reload();
+
 				//setup listeners for all the people in my WoT
 				setupListeners();
 				

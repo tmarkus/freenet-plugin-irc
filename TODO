@@ -1,6 +1,7 @@
 Release:
 
 - TESTING!
+- Reload the identities from the identity manager after a while
 - Trigger a part after we haven't seen an identity for a long time, so after more than 2 waypoints away?
 
 Next version(s):
