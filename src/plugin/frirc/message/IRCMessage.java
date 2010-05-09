@@ -5,16 +5,15 @@
 package plugin.frirc.message;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
 import plugin.frirc.ChannelSearcher;
+import plugin.frirc.Frirc;
 import plugin.frirc.IRCServer;
 import plugin.frirc.IdentityManager;
-import plugins.WoT.Identity;
 
 import freenet.pluginmanager.PluginRespirator;
 
@@ -190,7 +189,7 @@ public class IRCMessage {
 		
 		else
 		{
-			System.out.println("UNABLE TO PARSE MESSAGE, storing as raw: " + message);
+			if (Frirc.DEBUG) System.out.println("UNABLE TO PARSE MESSAGE, storing as raw: " + message);
 			this.raw = message;
 		}
 		

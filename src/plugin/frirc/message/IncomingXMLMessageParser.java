@@ -48,8 +48,8 @@ public class IncomingXMLMessageParser extends MessageBase {
 
 			Map<String,String> identity = im.getIdentityByID(Frirc.requestURItoID(uri));
 			
-			System.out.println("URI of the message we're trying to parse: " + uri);
-			System.out.println("Type of message was detected as: '" + type + "'");
+			if (Frirc.DEBUG) System.out.println("URI of the message we're trying to parse: " + uri);
+			if (Frirc.DEBUG) System.out.println("Type of message was detected as: '" + type + "'");
 			
 			//all messages contain identity hints so process them before anything else
 			expr = xpath.compile("//IdentityHints/identity");
@@ -60,7 +60,7 @@ public class IncomingXMLMessageParser extends MessageBase {
 			for (int i = 0; i < identityNodes.getLength(); i++) {
 			    String identityHint = identityNodes.item(i).getTextContent();
 			    cm.getMessageManager().calibrate(im.getIdentityByID(identityHint));
-				System.out.println("I found an identity hint and it is: " + identityNodes.item(i).getTextContent()); 
+			    if (Frirc.DEBUG) System.out.println("I found an identity hint and it is: " + identityNodes.item(i).getTextContent()); 
 			
 				for(Map<String, String> own_identity : cm.getOwnIdentities())
 				{

@@ -368,7 +368,7 @@ public class IRCServer extends Thread {
 			// Or InetAddress  addrs= InetAddress.getByName("localhost");
 			// Or InetAddress  addrs= InetAddress.getByName("127.0.0.1");  
 
-			System.out.println("TCP/Server running on : "+ addrs +" ,Port "+serverSocket.getLocalPort());
+			if (Frirc.DEBUG) System.out.println("TCP/Server running on : "+ addrs +" ,Port "+serverSocket.getLocalPort());
 
 			while(true) {
 				// Blocks until a connection occurs:
@@ -387,7 +387,7 @@ public class IRCServer extends Thread {
 				//nullpointerexception for when the serverSocket is already closed
 			}
 			
-			System.out.println("Closed the IRC server...");
+			if (Frirc.DEBUG) System.out.println("Closed the IRC server...");
 			cleanup();
 			return;
 		}

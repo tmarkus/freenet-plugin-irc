@@ -23,11 +23,11 @@ import freenet.support.api.HTTPRequest;
 
 public class Frirc implements FredPlugin, FredPluginHTTP, FredPluginThreadless, FredPluginTalker {
 
-	
+	public static boolean DEBUG = false;
 	public static String NAMESPACE = "frirc";
 	public static String WoT_NAMESPACE = "plugins.WoT.WoT";
 	
-	public static int WAYPOINT_DURATION = 1 * 60 * 1000 ; //ms
+	public static int WAYPOINT_DURATION = 5 * 60 * 1000 ; //ms
 	public static long TIMEOUT = 5 *60 * 1000; //ms
 	
 	private IRCServer IRCServer;
@@ -69,7 +69,17 @@ public class Frirc implements FredPlugin, FredPluginHTTP, FredPluginThreadless, 
 		"You should be able to connect to a simple IRC-like server on localhost:6667 .<br />\n" +
 		"Set your IRC username and nick to the nickname of one of your personal WoT-identities or you won't be able to connect. <br />\n" +
 		"You need a seperate IRC client in order to make use of Frirc!\n <br />" +
-		"Frirc wil only load WoT-identities which have a Frirc-context, adding Frirc to your own WoT-identity can take some time to trigger an update." +
+		"Frirc wil only load WoT-identities which have a Frirc-context, adding Frirc to your own WoT-identity can take some time to trigger an update.<br />" +
+		"\n" +
+		"<h2>Supported commands</h2>\n" +
+		"<ul>\n" +
+		"<li>NICK</li>\n" +
+		"<li>USER</li>\n" +
+		"<li>JOIN</li>\n" +
+		"<li>PART</li>\n" +
+		"<li>LIST</li>\n" +
+		"<li>PRIVMSG</li>\n" +
+		"</ul>\n\n" +
 		"</body></html>\n";
 	}
 

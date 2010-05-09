@@ -148,7 +148,7 @@ public class IdentityManager implements FredPluginTalker {
 			sfs.putOverwrite("Context", "FrIRC"); //empty means selecting all identities no matter the context
 			talker.send(sfs, null);	//send message to WoT plugin
 			
-			System.out.println("requested identities for identity " + identity.get("ID").split(",")[0]);
+			if (Frirc.DEBUG) System.out.println("requested identities for identity " + identity.get("ID").split(",")[0]);
 		} catch (PluginNotFoundException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -194,7 +194,7 @@ public class IdentityManager implements FredPluginTalker {
 
 				
 				ownIdentities.add(identity);
-				System.out.println("Identity added from WoT: " + identity.get("nick") + " (" + identity.get("ID") + ")");
+				if (Frirc.DEBUG) System.out.println("Identity added from WoT: " + identity.get("nick") + " (" + identity.get("ID") + ")");
 				++i;
 			}
 		} catch (FSParseException e) { //triggered when we've reached the end of the identity list
@@ -246,19 +246,22 @@ public class IdentityManager implements FredPluginTalker {
 		}
 	
 	
-		//FIXME: hack for broken WoT (from the perspective of freenet2/freenet1)
-		HashMap<String, String> identity = new HashMap<String,String>();
-		identity.put("ID", "67gJMSsyOg0OqifgD-Aebtw8XwKVx~vjVuRbo0WXsI4,4tbrCVGd3fvNTAwUxVZFFzaqoskEp85HgBkwpe~hiD0,AQACAAE");
-		identity.put("nick", "freenet1");
-		identity.put("Value", "100");
-		identities.add(identity);
-
-		
-		HashMap<String, String> identity2 = new HashMap<String,String>();
-		identity2.put("ID", "enQbW4kdLsYqFCLtq~a4OquE5uwKa3nHFqLih64j5KU,ROkkyPxiFajC2N7RUs4oRVw2iotEp-hOV4EID0BRC9g,AQACAAE");
-		identity2.put("nick", "freenet2");
-		identity2.put("Value", "100");
-		identities.add(identity2);
+		//FIXME: hack for broken WoT (from the perspective of freenet2/freenet1 on testnet)
+		if (Frirc.DEBUG)
+		{
+			HashMap<String, String> identity = new HashMap<String,String>();
+			identity.put("ID", "67gJMSsyOg0OqifgD-Aebtw8XwKVx~vjVuRbo0WXsI4,4tbrCVGd3fvNTAwUxVZFFzaqoskEp85HgBkwpe~hiD0,AQACAAE");
+			identity.put("nick", "freenet1");
+			identity.put("Value", "100");
+			identities.add(identity);
+	
+			
+			HashMap<String, String> identity2 = new HashMap<String,String>();
+			identity2.put("ID", "enQbW4kdLsYqFCLtq~a4OquE5uwKa3nHFqLih64j5KU,ROkkyPxiFajC2N7RUs4oRVw2iotEp-hOV4EID0BRC9g,AQACAAE");
+			identity2.put("nick", "freenet2");
+			identity2.put("Value", "100");
+			identities.add(identity2);
+		}
 	}
 
 	/**

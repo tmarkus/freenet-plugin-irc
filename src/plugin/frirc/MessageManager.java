@@ -94,7 +94,7 @@ public class MessageManager implements ClientGetCallback, RequestClient, ClientP
 				try {
 					fetchURI = Frirc.idToRequestURI(identity.get("ID"), cm.getChannel());
 					pendingRequests.add(hl.fetch(fetchURI, 20000, this, this, singleFC));
-					System.out.println("Trying to see whether a user is publishing at: " + fetchURI);
+					if (Frirc.DEBUG) System.out.println("Trying to see whether a user is publishing at: " + fetchURI);
 				} catch (FetchException e) {
 					e.printStackTrace();
 				}
@@ -132,7 +132,7 @@ public class MessageManager implements ClientGetCallback, RequestClient, ClientP
 			updateDNF(identity, Frirc.getNextIndexURI(requestURI));
 			
 		    Map<String, String> ownIdentity = IdentityManager.getIdentityInMap(identity, new HashSet<Map<String, String>>(im.getOwnIdentities()));
-			System.out.println("Inserting new message at: " + Frirc.requestURIToInsertURI(requestURI, ownIdentity.get("insertID")));
+		    if (Frirc.DEBUG) System.out.println("Inserting new message at: " + Frirc.requestURIToInsertURI(requestURI, ownIdentity.get("insertID")));
 			FreenetURI insertURI = Frirc.requestURIToInsertURI(requestURI, ownIdentity.get("insertID"));
 			
 			//insert content at next index
@@ -151,7 +151,7 @@ public class MessageManager implements ClientGetCallback, RequestClient, ClientP
 	@Override
 	public synchronized void onFailure(FetchException fe, ClientGetter cg, ObjectContainer oc) 
 	{
-		System.out.println("Failed to retrieve key: " + cg.getURI() + " (DNF)");
+		if (Frirc.DEBUG) System.out.println("Failed to retrieve key: " + cg.getURI() + " (DNF)");
 		
 		String id = Frirc.requestURItoID(cg.getURI());
 		Map<String, String> identity = im.getIdentityByID(id);
@@ -162,7 +162,7 @@ public class MessageManager implements ClientGetCallback, RequestClient, ClientP
 		//mark identity as calibrated
 		if (IdentityManager.identityInMap(identity, isCalibrated.keySet()) && !isCalibrated.get(IdentityManager.getIdentityInMap(identity, isCalibrated.keySet())))
 		{
-			System.out.println("Calibrated: " + identity.get("nick"));
+			if (Frirc.DEBUG) System.out.println("Calibrated: " + identity.get("nick"));
 			isCalibrated.put(IdentityManager.getIdentityInMap(identity, isCalibrated.keySet()), true);
 			
 			//send channelping if the identity that we're calibrating is connected locally
@@ -173,7 +173,7 @@ public class MessageManager implements ClientGetCallback, RequestClient, ClientP
 			}
 			else
 			{
-				System.out.println("Hello, I've calibrated another user, now watching for future messages");
+				if (Frirc.DEBUG) System.out.println("Hello, I've calibrated another user, now watching for future messages");
 				
 				try {
 					pendingRequests.add(hl.fetch(cg.getURI(), 20000, this, this, ULPRFC));
@@ -228,7 +228,7 @@ public class MessageManager implements ClientGetCallback, RequestClient, ClientP
 	public synchronized void onSuccess(FetchResult fr, ClientGetter cg, ObjectContainer oc) {
 		 
 		
-		System.out.println("The following URI was requested and found: " + cg.getURI());
+		if (Frirc.DEBUG) System.out.println("The following URI was requested and found: " + cg.getURI());
 		
 		
 		String id = Frirc.requestURItoID(cg.getURI());
@@ -272,7 +272,7 @@ public class MessageManager implements ClientGetCallback, RequestClient, ClientP
 			
 			//Set a ULPR for the next message
 			try {
-				System.out.println("Watching next key: " + Frirc.getNextIndexURI(cg.getURI()));
+				if (Frirc.DEBUG) System.out.println("Watching next key: " + Frirc.getNextIndexURI(cg.getURI()));
 				pendingRequests.add(hl.fetch(Frirc.getNextIndexURI(cg.getURI()),20000, this, this, ULPRFC));
 			} catch (FetchException e) {
 				e.printStackTrace();
@@ -305,7 +305,7 @@ public class MessageManager implements ClientGetCallback, RequestClient, ClientP
 	@Override
 	public void onFailure(InsertException arg0, BaseClientPutter arg1, ObjectContainer arg2) {
 
-		System.out.println("Inserting data into freenet has FAILED!");
+		if (Frirc.DEBUG) System.out.println("Inserting data into freenet has FAILED!");
 		System.out.println(arg0.getMessage());
 		arg0.printStackTrace();
 	
@@ -322,7 +322,7 @@ public class MessageManager implements ClientGetCallback, RequestClient, ClientP
 	@Override
 	public void onSuccess(BaseClientPutter arg0, ObjectContainer arg1) {
 	
-		System.out.println("Inserting data into freenet has succeeded!");
+		if (Frirc.DEBUG) System.out.println("Inserting data into freenet has succeeded!");
 	
 	}
 
