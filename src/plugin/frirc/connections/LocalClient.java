@@ -11,6 +11,7 @@ import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.transform.TransformerConfigurationException;
 import javax.xml.transform.TransformerFactoryConfigurationError;
 
+import plugin.frirc.Frirc;
 import plugin.frirc.IRCServer;
 import plugin.frirc.message.IRCMessage;
 
@@ -46,14 +47,14 @@ public class LocalClient extends FrircConnection {
 					String str = in.readLine();
 					if (str== null ) break;  
 	
-					System.out.println("RECEIVED: " + str);
+					if (Frirc.DEBUG) System.out.println("RECEIVED: " + str);
 					server.message(this, new IRCMessage(str));
 				}
 				Thread.sleep(100);
 			}
 			
 		} catch (IOException e) {
-			System.out.println("Disconnected with.."+socket);			
+			if (Frirc.DEBUG) System.out.println("Disconnected with.."+socket);			
 		} catch (InterruptedException e) {
 			e.printStackTrace();
 		} finally {
@@ -68,7 +69,7 @@ public class LocalClient extends FrircConnection {
 	{
 		if (message != null)
 		{
-			System.out.println("SENT: " + message);
+			if (Frirc.DEBUG) System.out.println("SENT: " + message);
 			out.println(message.toString());
 		}
 	}

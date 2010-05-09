@@ -112,7 +112,7 @@ public class IRCServer extends Thread {
 		}
 		if (manager == null) //setup a new channelmanager
 		{
-			System.out.println("Creating new ChannelManager with identity: " + identity.get("Identity"));
+			if (Frirc.DEBUG) System.out.println("Creating new ChannelManager with identity: " + identity.get("Identity"));
 			
 			manager = new ChannelManager(channel, this, pr, identity);
 			channels.add(manager);
