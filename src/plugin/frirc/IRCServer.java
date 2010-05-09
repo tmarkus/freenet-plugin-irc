@@ -335,24 +335,20 @@ public class IRCServer extends Thread {
 		 */
 		
 		
-		/*
-		
+/*
 		else if (message.getType().equals("WHO"))
 		{
-			String nick = getNickByCon(source);
 			String channel = message.getChannel();
 
-			for(String channelUser: channelUsers.get(message.getChannel()))
+			for(IRCMessage message: IRCMessage.createWhoChannelList(identity, channel, cha));
 			{
 				outQueue.get(source).add(new Message(":" + SERVERNAME + " 352 " + channelUser + " freenet " + channelUser + " H :0 " + channelUser));
 			}
 
 			outQueue.get(source).add(new Message("315 " + nick + " " + channel + " :End of /WHO list."));
 		}
-
-		*/
-
-		
+*/
+	
 	
 	}
 

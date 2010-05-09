@@ -7,6 +7,7 @@ package plugin.frirc.message;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
@@ -380,6 +381,19 @@ public class IRCMessage {
 		messages.add(new IRCMessage(":" + IRCServer.SERVERNAME + " 323 " + identity.get("nick") + " :End of /LIST"));
 		return messages;
 	}
+	
+	public static List<IRCMessage> createWhoChannelList(Map<String, String> identity, String channel, HashSet<Map<String, String>> channelIdentities)
+	{
+		List<IRCMessage> messages = new LinkedList<IRCMessage>();
+		for(Map<String, String> channelIdentity : channelIdentities)
+		{
+			//messages.add(new IRCMessage(":" + IRCServer.SERVERNAME + " 352 " + channelUser + " freenet " + channelUser + " H :0 " + channelUser)));	
+		}
+		messages.add(new IRCMessage("315 " + identity.get("nick") + " " + channel + " :End of /WHO list."));
+		
+		return messages;
+	}
+	
 	
 	
 	public static IRCMessage createPartMessage(Map<String, String> identity, String channel)

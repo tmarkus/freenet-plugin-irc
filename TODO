@@ -1,11 +1,11 @@
 Release:
 
 - TESTING!
-- Implement WHO usernames listing for a channel, some IRC clients require this
 - Trigger a part after we haven't seen an identity for a long time, so after more than 2 waypoints away?
 
 Next version(s):
 
+- Implement WHO usernames listing for a channel, some IRC clients require this
 - don't request a key too often, just ugly
 - check trust of a hinted identity (calculated trust, not manually assigned)
 - properly use rank for first identity listeners
